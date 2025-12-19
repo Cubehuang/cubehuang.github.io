@@ -5,19 +5,6 @@
   
   <entry>
     <title>Hello World</title>
-    <link href="/2025/12/16/hello-world1/"/>
-    <url>/2025/12/16/hello-world1/</url>
-    
-    <content type="html"><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p><h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">$ hexo new <span class="hljs-string">&quot;My New Post&quot;</span><br></code></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p><h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">$ hexo server<br></code></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p><h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">$ hexo generate<br></code></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p><h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">$ hexo deploy<br></code></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>]]></content>
-    
-    
-    
-  </entry>
-  
-  
-  
-  <entry>
-    <title>Hello World</title>
     <link href="/2025/12/16/hello-world2/"/>
     <url>/2025/12/16/hello-world2/</url>
     
@@ -30,7 +17,7 @@
   
   
   <entry>
-    <title>Android system_server中watchdog机制介绍（下）</title>
+    <title>Android system_server-watchdog机制介绍（下）</title>
     <link href="/2025/09/02/2_watchdog_%E4%B8%8B/"/>
     <url>/2025/09/02/2_watchdog_%E4%B8%8B/</url>
     
@@ -59,7 +46,7 @@
   
   
   <entry>
-    <title>Android system_server中watchdog机制介绍（上）</title>
+    <title>Android system_server-watchdog机制介绍（上）</title>
     <link href="/2025/03/23/1_watchdog_%E4%B8%8A/"/>
     <url>/2025/03/23/1_watchdog_%E4%B8%8A/</url>
     
@@ -80,6 +67,37 @@
       <tag>系统概念原理</tag>
       
       <tag>SWT</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>ANR-failed to complete startup</title>
+    <link href="/2025/03/20/3_ANR_failed_to_complete_startup/"/>
+    <url>/2025/03/20/3_ANR_failed_to_complete_startup/</url>
+    
+    <content type="html"><![CDATA[<h2 id="1-新型anr：Failed-to-complete-startup"><a href="#1-新型anr：Failed-to-complete-startup" class="headerlink" title="1.新型anr：Failed to complete startup"></a>1.新型anr：Failed to complete startup</h2><p><strong>anr名称</strong>：<code>failed to complete startup</code></p><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs cpp">am_anr  : [<span class="hljs-number">0</span>,<span class="hljs-number">3317</span>,com.android.phone,<span class="hljs-number">952647245</span>,Process ProcessRecord&#123;fac2d35 <span class="hljs-number">3317</span>:com.android.phone/<span class="hljs-number">1001</span>&#125; failed to complete startup]<br></code></pre></td></tr></table></figure><p><strong>目的</strong>：<br>检测应用启动中的耗时异常主要集中于应用进程中的Application的oncreate 函数是否耗时<br><strong>超时时间</strong>：15s+应用进程等待cpu的时间（0-15s），否则触发anr<br><strong>关键log</strong>：<br>表明应用进程存在等待CPU的时间 例如：<code> 02-05 06:17:40.694  1764  1831 I ActivityManagerService: Extending process start timeout by 5088ms for ProcessRecord{a7885a8 3344:com.android.phone/1001}</code><br>在systrace中搜索 <code>bindApplicationTimeSoft</code> 表明这个时间点应用进程在Application的oncreate已经耗时15s了<br><strong>案例</strong>：<br>是否<code>oncreate</code>中耗时超过15s就会触发anr<br><strong>可取的点</strong>：</p><ul><li>anr时长考虑到cpu负载情况</li><li>根据日志能看出进程是否在<code>等待CPU</code>，等待CPU的时长能反应CPU的负载情况</li><li>在广播超时anr的检测中，也使用了考虑CPU负载的这种策略</li></ul><h2 id="2-检测时序图"><a href="#2-检测时序图" class="headerlink" title="2.检测时序图"></a>2.检测时序图</h2><p><img src="/blog_imgs/3_ANR_failed_to_complete_startup/uml.png" alt="时序图"></p><h3 id="2-1-时序图解释："><a href="#2-1-时序图解释：" class="headerlink" title="2.1 时序图解释："></a>2.1 时序图解释：</h3><p>时序图一共分为两个，第一个图是优化前，图二是加强优化后的流程，加强点使用红色线条和红框标出</p><p>图一：</p><ul><li>anr的检测和其他anr的检测流程类似，“拆炸弹和埋炸弹”<code>system_server</code> 埋炸弹，<code>应用进程</code>来触发拆炸弹</li><li>1.<code>system_server</code>调用应用进程<code>handleBindApplication</code>，“埋下定时炸弹”：埋下一条15s的定时消息（粉色提示框1）<code>BIND_APPLICATION_TIMEOUT_SOFT_MSG</code></li><li>2.应用进程进一步调用Application的<code>oncreate</code>流程，当执行完则会调用<code>finishAttachApplication</code>（绿色框）</li><li>3.<code>system_server</code> 执行<code>finishAttachApplicationInner</code> 会移除这条定时消息（粉色提示框2）</li><li>4.如果应用进程<code>Application</code>的<code>oncreate</code>未能执行完成，则定时消息时间到达<code>15s</code>就会触发<code>anr流程</code>（红色提示框）</li></ul><p>图二：<br>当cpu负载比较严重的情况下，应用进程无法抢到cpu无法执行完对应代码流程，图一的检测方式会触发更多的anr出来，但其实没必要触发那么多anr，考虑这点Google 进行了优化：anr的检测时长需要考虑应用进程等待CPU的时间。</p><h3 id="2-2-应用进程等待CPU的时间"><a href="#2-2-应用进程等待CPU的时间" class="headerlink" title="2.2 应用进程等待CPU的时间"></a>2.2 应用进程等待CPU的时间</h3><p>通过检测proc&#x2F;&lt;pid&gt;&#x2F;schedstat中的第二个值的前后变化来达成</p><figure class="highlight tcl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs tcl">/<span class="hljs-keyword">proc</span>/17963 $<span class="hljs-title"> cat</span> schedstat<br>        37430675458 16041006985 59414<br>        <br><br>        https://docs.kernel.org/scheduler/sched-stats.html<br>        /<span class="hljs-keyword">proc</span>/&lt;pid&gt;/schedstat<br>        schedstats<span class="hljs-title"> also</span> adds<span class="hljs-title"> a</span> new /<span class="hljs-keyword">proc</span>/&lt;pid&gt;/schedstat<span class="hljs-title"> file</span> to<span class="hljs-title"> include</span> some<span class="hljs-title"> of</span> the<span class="hljs-title"> same</span> information<span class="hljs-title"> on</span> a<span class="hljs-title"> per-process</span> level.<br>        There<span class="hljs-title"> are</span> three<span class="hljs-title"> fields</span> in<span class="hljs-title"> this</span> file<span class="hljs-title"> correlating</span> for<span class="hljs-title"> that</span> process<span class="hljs-title"> to:</span><br>        1.<span class="hljs-title"> time</span> spent<span class="hljs-title"> on</span> the<span class="hljs-title"> cpu</span> (in<span class="hljs-title"> nanoseconds)</span><br>        2.<span class="hljs-title"> time</span> spent<span class="hljs-title"> waiting</span> on<span class="hljs-title"> a</span> runqueue (in<span class="hljs-title"> nanoseconds)</span><br>        3.<span class="hljs-title"> of</span> timeslices<span class="hljs-title"> run</span> on<span class="hljs-title"> this</span> cpu<br></code></pre></td></tr></table></figure><ul><li><ol><li>在<code>system_server</code>调用应用进程<code>handleBindApplication</code>之前获取一次应用进程的该值:<code>schedstat</code>(第一个红色框部分)</li></ol></li><li><ol start="2"><li>如果应用进程耗时<code>Application</code>的<code>oncreate</code>未能执行完成，则定时消息时间到达<code>15s</code>，再次获取应用进程的该值：<code>schedstat</code> 前后差值换算成一个时间值，然后在设置一个定时消息，定时时间为该<strong>时间值</strong>(0-15s)，如果应用进程该时间值之内还未处理完则触发<code>anr</code></li></ol></li></ul><h2 id="3-google-合入记录"><a href="#3-google-合入记录" class="headerlink" title="3.google 合入记录"></a>3.google 合入记录</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs cpp">from: jji@google.com<br><br>Extend the BIND_APPLICATION_TIMEOUT<br><br>We<span class="hljs-string">&#x27;re reporting an ANR if the app process doesn&#x27;</span>t finish<br>the handling of bindApplication within the BIND_APPLICATION_TIMEOUT.<br>But very often, due to the contended system resources, the app<br>process just doesn<span class="hljs-string">&#x27;t get enough CPU time to run. So now we&#x27;</span>ll<br>extend the timeout by the time that <span class="hljs-keyword">this</span> process is waiting <span class="hljs-keyword">for</span><br>run.<br><br>Also given the bindApplication includes the time the app spends<br>on Application#<span class="hljs-built_in">onCreate</span>(), relax the timeout to <span class="hljs-number">15</span>s by <span class="hljs-keyword">default</span>.<br><br>Bug: <span class="hljs-number">304484667</span><br>Test: Manual<br>Change-Id: I<span class="hljs-number">442e997f</span>a6f30445ddeb<span class="hljs-number">2922146e837</span>cc24d4174<br></code></pre></td></tr></table></figure><h2 id="4-案例："><a href="#4-案例：" class="headerlink" title="4.案例："></a>4.案例：</h2><p>重写应用程序的Application中的oncreate方法<br>在oncreate中睡眠16s</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MyApplication</span>  <span class="hljs-keyword">extends</span> <span class="hljs-title class_">Application</span> &#123;<br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">onCreate</span><span class="hljs-params">()</span> &#123;<br>        <span class="hljs-built_in">super</span>.onCreate();<br>        Log.i(<span class="hljs-string">&quot;hsy&quot;</span>,<span class="hljs-string">&quot;application sleep&quot;</span>);<br>        <span class="hljs-keyword">try</span> &#123;<br>            sleep(<span class="hljs-number">160000</span>);<br>        &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;<br>            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">RuntimeException</span>(e);<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure><p>由于这里有耗时行为则会触发该类anr，发生该类anr应用会直接闪退，可能不会有anr弹窗</p><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-number">02</span><span class="hljs-number">-26</span> <span class="hljs-number">21</span>:<span class="hljs-number">39</span>:<span class="hljs-number">26.345</span>  <span class="hljs-number">1672</span> <span class="hljs-number">13615</span> I am_anr  : [<span class="hljs-number">0</span>,<span class="hljs-number">12825</span>,com.example.myapplication,<span class="hljs-number">552124230</span>,Process ProcessRecord&#123;<span class="hljs-number">24</span>d<span class="hljs-number">36e3</span> <span class="hljs-number">12825</span>:com.example.myapplication/u0a139&#125; failed to complete startup]<br></code></pre></td></tr></table></figure><h2 id="5-排查点"><a href="#5-排查点" class="headerlink" title="5.排查点"></a>5.排查点</h2><h3 id="5-1-从应用角度："><a href="#5-1-从应用角度：" class="headerlink" title="5.1 从应用角度："></a>5.1 从应用角度：</h3><ul><li>排查重写的<code>Application</code>的<code>oncreate</code>的方法是否耗时</li><li>主要需要排查<code>main</code> log中主线程打印出来的日志是否存在耗时异常，根据日志排查代码</li><li>可以多<code>dump</code>几次<code>anr trace</code>信息，从t<code>race</code>中看主线程的<strong>阻塞点是否都是一致</strong></li></ul><h3 id="5-2-从系统角度："><a href="#5-2-从系统角度：" class="headerlink" title="5.2 从系统角度："></a>5.2 从系统角度：</h3><ul><li>排查是否是cpu负载影响应用代码的执行，从<code>system</code> log中检索<code>Extending process start timeout by</code>看看应用进程在这段时间内等待CPU的时间是多少</li><li>例如：<br><code>02-05 06:17:40.694  1764  1831 I ActivityManagerService: Extending process start timeout by 5088ms for ProcessRecord{a7885a8 3344:com.android.phone/1001}</code></li><li>以及排查dump出来的<code>anr trace</code>文件中排查主线程堆栈是否存在异常，几次anr的堆栈是否都一致</li><li>anr时候的<code>dump cpu占用信息</code>，anr的进程的cpu占比排名是如何？是否没有抢到cpu</li></ul>]]></content>
+    
+    
+    <categories>
+      
+      <category>机制</category>
+      
+      <category>ANR</category>
+      
+      <category>failed_to_complete_startup</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>系统概念原理</tag>
+      
+      <tag>ANR</tag>
       
     </tags>
     
