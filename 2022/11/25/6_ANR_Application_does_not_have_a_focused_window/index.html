@@ -1,0 +1,757 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/site_icon.png">
+  <link rel="icon" href="/main_wallpapers/site_icon_2.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#37AFE1">
+  <meta name="author" content="CubeHuang">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="[!top]Android 13 背景最近项目在首轮Monkey测试中，频繁报了很多”无焦点窗口”的ANR. 鉴于之前也看过Android 的Input模块，于是想重新在梳理一下该种类型应用无响应的原理，以便后面分析问题能更快精准定位. 该种ANR主要表现为:am_anr  : [用户id,进程号,包名,flag,ANR原因] 原因为：Input dispatching timed out (Ap">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ANR-Have no focused Window">
+<meta property="og:url" content="http://example.com/2022/11/25/6_ANR_Application_does_not_have_a_focused_window/">
+<meta property="og:site_name" content="Cubehuang_blog">
+<meta property="og:description" content="[!top]Android 13 背景最近项目在首轮Monkey测试中，频繁报了很多”无焦点窗口”的ANR. 鉴于之前也看过Android 的Input模块，于是想重新在梳理一下该种类型应用无响应的原理，以便后面分析问题能更快精准定位. 该种ANR主要表现为:am_anr  : [用户id,进程号,包名,flag,ANR原因] 原因为：Input dispatching timed out (Ap">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-11-25T04:20:10.000Z">
+<meta property="article:modified_time" content="2024-05-20T12:41:26.000Z">
+<meta property="article:author" content="CubeHuang">
+<meta property="article:tag" content="ANR">
+<meta property="article:tag" content="系统概念原理">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>ANR-Have no focused Window - Cubehuang_blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":["home","post","category","about","links","archive"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"left","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>CubeHuang</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/main_wallpapers/wp_1.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="ANR-Have no focused Window"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2022-11-25 12:20" pubdate>
+          2022年11月25日 中午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          4.9k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          42 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="padding-left: 2rem; margin-right: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">ANR-Have no focused Window</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>[!top]<br>Android 13</p>
+<h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>最近项目在首轮Monkey测试中，频繁报了很多”无焦点窗口”的ANR.</p>
+<p>鉴于之前也看过Android 的Input模块，于是想重新在梳理一下该种类型应用无响应的原理，以便后面分析问题能更快精准定位.</p>
+<p>该种ANR主要表现为:<br><code>am_anr  : [用户id,进程号,包名,flag,ANR原因]</code></p>
+<p>原因为：<br><code>Input dispatching timed out (Application does not have a focused window)</code><br>主要强调：<strong>分发输入事件过程中，应用没有一个有焦点的窗口</strong></p>
+<p>另外还有一种ANR原因为：<br><code>Input dispatching timed out (ce4ddfb com.android.chrome/org.chromium.chrome.browser.firstrun.FirstRunActivity (server) is not responding. Waited 8000ms for KeyEvent)</code><br>主要强调：<br><strong>分发输入事件给应用进程，应用进程在规定的时间内，没有将此输入事件处理完</strong>.</p>
+<h3 id="ANR一"><a href="#ANR一" class="headerlink" title="ANR一"></a>ANR一</h3><p>我们首先将梳理第一种原因的ANR.</p>
+<p>我们要知道，ANR的触发流程都在系统进程 <code>system_server</code> 进程中的 <code>InputManagerService</code> 服务中.</p>
+<p>在 <code>InputManagerService</code> 服务中，两个 <code>Native</code> 线程比较关键：</p>
+<ul>
+<li><strong>InputReader</strong>–事件的读取</li>
+<li><strong>InputDispatcher</strong>–事件的分发</li>
+</ul>
+<p><code>ANR</code>的触发机制在 <code>InputDispatcher</code> 线程中，输入事件通过 <code>InputReader</code> 线程上报上来，就会触发到 <code>InputDispatcher</code> 线程中 <code>InputDispatcher.cpp</code> 的  <code>dispatchOnce()</code> 中，我们从此开始分析.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-comment">//InputDispatcher.cpp</span><br><span class="hljs-keyword">void</span> InputDispatcher::dispatchOnce() &#123;<br>    <span class="hljs-type">nsecs_t</span> <span class="hljs-variable">nextWakeupTime</span> <span class="hljs-operator">=</span> LONG_LONG_MAX;<br>    &#123; <span class="hljs-comment">// acquire lock</span><br>        std::scoped_lock <span class="hljs-title function_">_l</span><span class="hljs-params">(mLock)</span>;<br>        mDispatcherIsAlive.notify_all();<br><br>        <span class="hljs-comment">/*mCommandQueue为一个命令队列即:该线程在其他地方只要想执行一个操作,</span><br><span class="hljs-comment">        就可以通过postCommandLocked(),往里面插入，在InputDispater线程中在循环中，</span><br><span class="hljs-comment">        实施监控着里面是否command需要处理</span><br><span class="hljs-comment">        判断mCommandQueue是否为空</span><br><span class="hljs-comment">        mCommandQueue是通过postCommandLocked()添加元素</span><br><span class="hljs-comment">        postCommandLocked()在多处地方调用，</span><br><span class="hljs-comment">        总结来说就是有事件触发时mCommandQueue不会为空*/</span><br>        <span class="hljs-keyword">if</span> (!haveCommandsLocked()) &#123;<br>            dispatchOnceInnerLocked(&amp;nextWakeupTime);<br>        &#125;<br><br>        <span class="hljs-comment">// 运行pending Command</span><br>        <span class="hljs-comment">// 运行后，下一次立刻唤醒</span><br>        <span class="hljs-keyword">if</span> (runCommandsLockedInterruptible()) &#123;<br>            nextWakeupTime = LONG_LONG_MIN;<br>        &#125;<br><br>        <span class="hljs-comment">// 检查ANR</span><br>        <span class="hljs-comment">// 下一次唤醒时间为唤醒时间和ANR检查时间的最小值</span><br>        const <span class="hljs-type">nsecs_t</span> <span class="hljs-variable">nextAnrCheck</span> <span class="hljs-operator">=</span> processAnrsLocked();<span class="hljs-comment">//&lt;&lt;&lt;&lt;进入这里</span><br>        nextWakeupTime = std::min(nextWakeupTime, nextAnrCheck);<br><br>        <span class="hljs-comment">//如果没有要处理的Command或者pending或者正在排队处理的Input事件,</span><br>        <span class="hljs-comment">//那么InputDispatcher线程将休眠</span><br>        <span class="hljs-keyword">if</span> (nextWakeupTime == LONG_LONG_MAX) &#123;<br>            mDispatcherEnteredIdle.notify_all();<br>        &#125;<br>    &#125; <span class="hljs-comment">// release lock</span><br><br>    <span class="hljs-comment">// Wait for callback or timeout or wake.  (make sure we round up, not down)</span><br>    <span class="hljs-type">nsecs_t</span> <span class="hljs-variable">currentTime</span> <span class="hljs-operator">=</span> now();<br>    <span class="hljs-type">int</span> <span class="hljs-variable">timeoutMillis</span> <span class="hljs-operator">=</span> toMillisecondTimeoutDelay(currentTime, nextWakeupTime);<br>    mLooper-&gt;pollOnce(timeoutMillis);<br>&#125;<br><br></code></pre></td></tr></table></figure>
+<ol>
+<li>先通过 <code>haveCommandsLocked()</code> 判断 <code>mCommandQueue</code> 是否不为空，则进入<br><code>dispatchOnceInnerLocked(&amp;nextWakeupTime)</code> 处理事件派发或者 <code>command</code> 事务。</li>
+<li>其次就是 <code>runCommandsLockedInterruptible</code> 处理 <code>pending Command</code> 事务</li>
+<li>通过 <code>processAnrsLocked</code> 检查是否有ANR发生。</li>
+<li>判断下一次唤醒的时间 是否 <code>c == LONG_LONG_MAX</code><br> 这个 <code>nextWakeupTime</code> 是否等于<code>LONG_LONG_MAX</code>和<code>AnrTracker</code>中的 <code>mAnrTimeouts</code>集合，集合为空即会返回<code>LONG_LONG_MAX</code>，注:这个<code>AnrTracker</code>是用来追踪每个 <code>connection</code> 进入ANR的时间，以便能快速找到，更快导致ANR的<code>connections</code></li>
+</ol>
+<h3 id="事件的分发-dispatchOnceInnerLocked"><a href="#事件的分发-dispatchOnceInnerLocked" class="headerlink" title="事件的分发 dispatchOnceInnerLocked"></a>事件的分发 dispatchOnceInnerLocked</h3> <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">void</span> InputDispatcher::dispatchOnceInnerLocked(nsecs_t* nextWakeupTime) &#123;<br>    <span class="hljs-type">nsecs_t</span> <span class="hljs-variable">currentTime</span> <span class="hljs-operator">=</span> now();<span class="hljs-comment">//ANR 计算的起点时间&lt;&lt;&lt;&lt; 1</span><br><br>    <span class="hljs-comment">//..</span><br><br>   <span class="hljs-comment">//..</span><br>    <span class="hljs-comment">//mPendingEvent默认为空，会从mInboundQueue中获取到值</span><br>    <span class="hljs-keyword">if</span> (!mPendingEvent) &#123;<br>        <span class="hljs-comment">// mInboundQueue是通过enqueueInboundEventLocked()赋值，所以有事件的时候mInboundQueue不为空</span><br>        <span class="hljs-comment">// notifyConfigurationChanged() -&gt; enqueueInboundEventLocked()</span><br>        <span class="hljs-comment">// notifyKey() -&gt; enqueueInboundEventLocked()</span><br>        <span class="hljs-comment">// notifyMotion() -&gt; enqueueInboundEventLocked()</span><br>        <span class="hljs-comment">// notifyDeviceReset() -&gt; enqueueInboundEventLocked()</span><br>        <span class="hljs-comment">// injectInputEvent() -&gt; enqueueInboundEventLocked()</span><br>        <span class="hljs-comment">// setInputWindowsLocked() -&gt; enqueueFocusEventLocked()</span><br>        <span class="hljs-keyword">if</span> (mInboundQueue.empty()) &#123;<br>            <span class="hljs-keyword">if</span> (isAppSwitchDue) &#123;<br>                <span class="hljs-comment">// The inbound queue is empty so the app switch key we were waiting</span><br>                <span class="hljs-comment">// for will never arrive.  Stop waiting for it.</span><br>                <span class="hljs-comment">//入站队列为空，因此我们等待的应用进程切换key永远不会到达。 别再等了</span><br>                resetPendingAppSwitchLocked(<span class="hljs-literal">false</span>);<br>                isAppSwitchDue = <span class="hljs-literal">false</span>;<br>            &#125;<br><br>           <span class="hljs-comment">//...repeat相关</span><br>        &#125; <span class="hljs-keyword">else</span> &#123;<span class="hljs-comment">//&lt;&lt;&lt;&lt; 2</span><br>            <span class="hljs-comment">// Inbound queue has at least one entry.</span><br>            <span class="hljs-comment">//取出一个事件</span><br>            mPendingEvent = mInboundQueue.front();<br>            mInboundQueue.pop_front();<br>            traceInboundQueueLengthLocked();<br>        &#125;<br><br>        <span class="hljs-comment">// Poke user activity for this event.</span><br>        <span class="hljs-comment">//该 event是否该传给应用程序</span><br>        <span class="hljs-keyword">if</span> (mPendingEvent-&gt;policyFlags &amp; POLICY_FLAG_PASS_TO_USER) &#123;<br>            pokeUserActivityLocked(*mPendingEvent);<span class="hljs-comment">//&lt;&lt;&lt;&lt; 3</span><br>        &#125;<br>    &#125;<br><br>  <span class="hljs-comment">//..</span><br>    <span class="hljs-comment">//根据PendingEvent-&gt;type 不同的类型区处理不同的事件</span><br>    <span class="hljs-keyword">switch</span> (mPendingEvent-&gt;type) &#123;<span class="hljs-comment">//&lt;&lt;&lt;&lt; 4</span><br>        <span class="hljs-comment">//..</span><br>        <span class="hljs-comment">//case:....</span><br>        <span class="hljs-comment">//来源：notifyKey() -&gt; new KeyEntry()</span><br>        <span class="hljs-keyword">case</span> EventEntry::Type::KEY: &#123;<br>            std::shared_ptr&lt;KeyEntry&gt; keyEntry = std::static_pointer_cast&lt;KeyEntry&gt;(mPendingEvent);<br>            <span class="hljs-comment">//....设置dropReason相关</span><br>            <br>            done = dispatchKeyLocked(currentTime, keyEntry, &amp;dropReason, nextWakeupTime);<br>            <span class="hljs-keyword">break</span>;<br>        &#125;<br><br>        <span class="hljs-keyword">case</span> EventEntry::Type::MOTION: &#123;<br>            <span class="hljs-comment">//....设置dropReason相关</span><br>            <br>            done = dispatchMotionLocked(currentTime, motionEntry, &amp;dropReason, nextWakeupTime);<br>            <span class="hljs-keyword">break</span>;<br>        &#125;<br><br>      <span class="hljs-comment">//...</span><br>    &#125;<br><br>    <span class="hljs-keyword">if</span> (done) &#123;<span class="hljs-comment">//&lt;&lt;&lt;&lt; 5</span><br>        <span class="hljs-keyword">if</span> (dropReason != DropReason::NOT_DROPPED) &#123;<br>            dropInboundEventLocked(*mPendingEvent, dropReason);<br>        &#125;<br>        mLastDropReason = dropReason;<br><br>        releasePendingEventLocked();<br>        *nextWakeupTime = LONG_LONG_MIN; <span class="hljs-comment">// force next poll to wake up immediately</span><br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+<p><code>&lt;&lt;&lt;&lt;N</code>的解释</p>
+<ol>
+<li>当前将会保留一个时间，作为ANR检查开始的计时时间: <strong>currentTime</strong></li>
+<li>将会判断 <code>mPendingEvent</code> 有没有值，有没有 <code>pending</code> 的输入事件需要处理。没有则需要从 <code>mInboundQueue</code> 队头取一个事件出来处理， <code>mInboundQueue</code> 则为一个收集所有事件的队列，包括，按键 滑动 等等一系列事件。通过 <code>InputDispatcher</code> 模块中的notifyXXXXX()，将事件放入 <code>connection。outboundQueue</code> 队列中。</li>
+<li><code>pokeUserActivityLocked</code> 会调用到 <code>PowerManagerService</code> 中的 <code>updatePowerStateLocked()</code>函数中，主要作用就是通知<code>power</code>服务，更新服务状态不要休眠相关。</li>
+<li>下面就根据 <code>pendingEvent</code> 的类型对事件进行派发 <code>dispatchXXXXLocked</code>(currentTime&#x2F;ANR计时时间&#x2F;, )，并且将会返回一个事件处理的结果值 done</li>
+<li>根据处理结果 <code>done</code> 的值(true-事件处理完 false-事件未处理完)，处理完则需要将事件释放掉 并且将 <code>mPendingEvent</code> 置空</li>
+</ol>
+<h3 id="dispatchKeyLocked"><a href="#dispatchKeyLocked" class="headerlink" title="dispatchKeyLocked"></a>dispatchKeyLocked</h3><p>我们选择<code>key</code>事件派发流程来讲解</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><code class="hljs java">bool InputDispatcher::dispatchKeyLocked(nsecs_t currentTime, std::shared_ptr&lt;KeyEntry&gt; entry,<br>                                        DropReason* dropReason, nsecs_t* nextWakeupTime) &#123;<br>    <span class="hljs-comment">//...省略</span><br><br>    <span class="hljs-comment">// Identify targets.</span><br>    std::vector&lt;InputTarget&gt; inputTargets;<br>    <span class="hljs-comment">//寻找焦点窗口</span><br>    <span class="hljs-type">InputEventInjectionResult</span> <span class="hljs-variable">injectionResult</span> <span class="hljs-operator">=</span><br>            findFocusedWindowTargetsLocked(currentTime, *entry, inputTargets, nextWakeupTime);<br>    <span class="hljs-keyword">if</span> (injectionResult == InputEventInjectionResult::PENDING) &#123;<br>        <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>;<span class="hljs-comment">//pending事件未被处理,代表焦点窗口还没找到,有可能是ANR或者其他原因</span><br>    &#125;<br><br>    setInjectionResult(*entry, injectionResult);<br>    <span class="hljs-keyword">if</span> (injectionResult != InputEventInjectionResult::SUCCEEDED) &#123;<br>        <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>;<br>    &#125;<br><br>    <span class="hljs-comment">// Add monitor channels from event&#x27;s or focused display.</span><br>    addGlobalMonitoringTargetsLocked(inputTargets, getTargetDisplayId(*entry));<br><br>    <span class="hljs-comment">// Dispatch the key.分发此事件</span><br>    dispatchEventLocked(currentTime, entry, inputTargets);<br>    <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+<p>省略部分和该种情况<code>ANR</code>无关的代码(按键重复相关，以及，<code>WMS</code> 对于key事件的拦截，感兴趣自行了解)<br>这里解读一下查找焦点窗口函数的返回值，返回<code>SUCCEEDED</code>即成功找到焦点窗口，另外下面两种返回值将是异常情况：</p>
+<ul>
+<li><p><strong>PENDING</strong>：</p>
+<ul>
+<li>1 应用已经获得焦点 但是窗口没有焦点，我们将会设置 <code>mNoFocusedWindowTimeoutTime</code> 事件为当前时间+5s，返回pending，(意思代表如果下一次检查过来时候，将会比较当前时间和 <code>mNoFocusedWindowTimeoutTime</code>，如果当前时间大于 <code>mNoFocusedWindowTimeoutTime</code>，就代表发生已经ANR。)这种情况通常打印log: <code>Waiting because no window has focus but XXX may eventually add a window when it finishes starting up。 Will wait for XXX ms&quot;</code></li>
+<li>2 另外一种就是上面说的另一种情况 如果当前时间 小于 <code>mNoFocusedWindowTimeoutTime</code>，意思就是寻找焦点窗口还未超时，继续<code>pending</code>，不打印log</li>
+<li>3 焦点窗口找到了，但是本来焦点窗口就处于<code>paused</code>状态，这个时候也返回<code>pending</code>，这种情况会打印log: <code>Waiting because XXX is paused</code></li>
+<li>4 最后一种情况是，派发的是按键事件，如果这里将要特殊处理，因为原则是:如果是按键事件，那么焦点窗口之前还未处理的其他事件必须处理完:(<u>如果分发一个按键事件，给一个窗口，那么这个窗口之前的<code>input</code>事件必须处理完，因为之前的事件可能改变焦点到另外一个窗口。 确保，key 事件被派发找正确的焦点窗口中，如果之前的事件未处理完，那么此key事件将<code>pending</code>，处理完之前的事件后再次发送</u>)</li>
+</ul>
+</li>
+<li><p><strong>FAILED</strong>：</p>
+<ul>
+<li>如果当前应用程序没有焦点并且也没有焦点窗口，这将会返回 FAILED，并且该input事件将被丢掉，将打印log： <code>Dropping XXX  event because there is no focused window or focused application in DisplayId</code></li>
+<li>另外一种返回failed情况即 上面PENDING 情况1的括号部分，已经出现ANR;log将会打印log：<code>Dropping XXX event because there is no focused window</code></li>
+</ul>
+</li>
+</ul>
+<p>上面的两种返回值的逻辑在函数：<code>findFocusedWindowTargetsLocked</code>中，如下：</p>
+<h3 id="findFocusedWindowTargetsLocked"><a href="#findFocusedWindowTargetsLocked" class="headerlink" title="findFocusedWindowTargetsLocked"></a>findFocusedWindowTargetsLocked</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br></pre></td><td class="code"><pre><code class="hljs java">InputEventInjectionResult InputDispatcher::findFocusedWindowTargetsLocked(<br>        nsecs_t currentTime, const EventEntry&amp; entry, std::vector&lt;InputTarget&gt;&amp; inputTargets,<br>        nsecs_t* nextWakeupTime) &#123;<br>    std::string reason;<br><br>    <span class="hljs-type">int32_t</span> <span class="hljs-variable">displayId</span> <span class="hljs-operator">=</span> getTargetDisplayId(entry);<br>    <span class="hljs-comment">// mFocusedWindowHandlesByDisplay在setInputWindowsLocked()里赋值</span><br>    sp&lt;InputWindowHandle&gt; focusedWindowHandle = getFocusedWindowHandleLocked(displayId);<br>    <span class="hljs-comment">// mFocusedApplicationHandlesByDisplay在setFocusedApplication()里赋值</span><br>    std::shared_ptr&lt;InputApplicationHandle&gt; focusedApplicationHandle =<br>            getValueByKey(mFocusedApplicationHandlesByDisplay, displayId);<br><br>    <span class="hljs-comment">//如果当前没有焦点窗口和焦点应用程序，则删除该事件。</span><br>    <span class="hljs-keyword">if</span> (focusedWindowHandle == nullptr &amp;&amp; focusedApplicationHandle == nullptr) &#123;<br>        ALOGI(<span class="hljs-string">&quot;Dropping %s event because there is no focused window or focused application in &quot;</span><br>              <span class="hljs-string">&quot;display %&quot;</span> PRId32 <span class="hljs-string">&quot;.&quot;</span>,<br>              NamedEnum::string(entry.type).c_str(), displayId);<br>        <span class="hljs-keyword">return</span> InputEventInjectionResult::FAILED;<br>    &#125;<br><br>    <span class="hljs-comment">// Compatibility behavior: raise ANR if there is a focused application, but no focused window.</span><br>    <span class="hljs-comment">// Only start counting when we have a focused event to dispatch. The ANR is canceled if we</span><br>    <span class="hljs-comment">// start interacting with another application via touch (app switch). This code can be removed</span><br>    <span class="hljs-comment">// if the &quot;no focused window ANR&quot; is moved to the policy. Input doesn&#x27;t know whether</span><br>    <span class="hljs-comment">// an app is expected to have a focused window.</span><br>    <span class="hljs-comment">/*</span><br><span class="hljs-comment">    兼容性行为：</span><br><span class="hljs-comment">    如果存在焦点应用程序但没有焦点窗口，则引发 ANR。</span><br><span class="hljs-comment">    只有当我们有重点事件要调度时，才开始计数。</span><br><span class="hljs-comment">    如果我们开始通过触摸（app switch）与另一个应用程序交互，则 ANR 将被取消。</span><br><span class="hljs-comment">    如果将“无焦点窗口 ANR”移动到policy中，则可以删除此代码。输入不知道应用是否应具有焦点窗口。</span><br><span class="hljs-comment">    ---开始ANR检查</span><br><span class="hljs-comment">    */</span><br>    <span class="hljs-keyword">if</span> (focusedWindowHandle == nullptr &amp;&amp; focusedApplicationHandle != nullptr) &#123;<br>        <span class="hljs-keyword">if</span> (!mNoFocusedWindowTimeoutTime.has_value()) &#123;<br>            <span class="hljs-comment">// 默认mNoFocusedWindowTimeoutTime没有值，第一次检查ANR会走下面这个流程</span><br><br>            <span class="hljs-comment">// DEFAULT_INPUT_DISPATCHING_TIMEOUT = 5s * HwTimeoutMultiplier();</span><br>            <span class="hljs-comment">// 默认input dispatch timeout时间时5s</span><br>            std::chrono::<span class="hljs-type">nanoseconds</span> <span class="hljs-variable">timeout</span> <span class="hljs-operator">=</span> focusedApplicationHandle-&gt;getDispatchingTimeout(<br>                    DEFAULT_INPUT_DISPATCHING_TIMEOUT);<br>            <span class="hljs-comment">// 给mNoFocusedWindowTimeoutTime赋值，触发ANR时会检查这个值是否为空，不为空才触发ANR</span><br>            mNoFocusedWindowTimeoutTime = currentTime + timeout.count();<br>            <span class="hljs-comment">// 把当前的focusedApplicationHandle赋值给mAwaitedFocusedApplication，</span><br>            <span class="hljs-comment">//触发ANR时会检查这个值是否为空，不为空才触发ANR</span><br>            mAwaitedFocusedApplication = focusedApplicationHandle;<br>            mAwaitedApplicationDisplayId = displayId;<br>            ALOGW(<span class="hljs-string">&quot;Waiting because no window has focus but %s may eventually add a &quot;</span><br>                  <span class="hljs-string">&quot;window when it finishes starting up. Will wait for %&quot;</span> PRId64 <span class="hljs-string">&quot;ms&quot;</span>,<br>                  mAwaitedFocusedApplication-&gt;getName().c_str(), millis(timeout));<br>            *nextWakeupTime = *mNoFocusedWindowTimeoutTime;<br>            <span class="hljs-keyword">return</span> InputEventInjectionResult::PENDING;<br>        &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (currentTime &gt; *mNoFocusedWindowTimeoutTime) &#123;<br>            <span class="hljs-comment">// Already raised ANR. Drop the event</span><br>            ALOGE(<span class="hljs-string">&quot;Dropping %s event because there is no focused window&quot;</span>,<br>                  NamedEnum::string(entry.type).c_str());<br>            <span class="hljs-keyword">return</span> InputEventInjectionResult::FAILED;<br>        &#125; <span class="hljs-keyword">else</span> &#123;<br>            <span class="hljs-comment">// Still waiting for the focused window</span><br>            <span class="hljs-keyword">return</span> InputEventInjectionResult::PENDING;<br>        &#125;<br>    &#125;<br><br>    <span class="hljs-comment">// we have a valid, non-null focused window</span><br>    <span class="hljs-comment">//到这则说明没有ANR</span><br>    <span class="hljs-comment">// // 如果走到这个流程，说明没有ANR，清空mNoFocusedWindowTimeoutTime和mAwaitedFocusedApplication</span><br>    resetNoFocusedWindowTimeoutLocked();<br><br>    <span class="hljs-comment">// Check permissions.</span><br>    <span class="hljs-keyword">if</span> (!checkInjectionPermission(focusedWindowHandle, entry.injectionState)) &#123;<br>        <span class="hljs-keyword">return</span> InputEventInjectionResult::PERMISSION_DENIED;<br>    &#125;<br>    <span class="hljs-comment">//窗口暂停</span><br>    <span class="hljs-keyword">if</span> (focusedWindowHandle-&gt;getInfo()-&gt;paused) &#123;<br>        ALOGI(<span class="hljs-string">&quot;Waiting because %s is paused&quot;</span>, focusedWindowHandle-&gt;getName().c_str());<br>        <span class="hljs-keyword">return</span> InputEventInjectionResult::PENDING;<br>    &#125;<br><br>    <span class="hljs-comment">// If the event is a key event, then we must wait for all previous events to</span><br>    <span class="hljs-comment">// complete before delivering it because previous events may have the</span><br>    <span class="hljs-comment">// side-effect of transferring focus to a different window and we want to</span><br>    <span class="hljs-comment">// ensure that the following keys are sent to the new window.</span><br>    <span class="hljs-comment">//</span><br>    <span class="hljs-comment">// Suppose the user touches a button in a window then immediately presses &quot;A&quot;.</span><br>    <span class="hljs-comment">// If the button causes a pop-up window to appear then we want to ensure that</span><br>    <span class="hljs-comment">// the &quot;A&quot; key is delivered to the new pop-up window.  This is because users</span><br>    <span class="hljs-comment">// often anticipate pending UI changes when typing on a keyboard.</span><br>    <span class="hljs-comment">// To obtain this behavior, we must serialize key events with respect to all</span><br>    <span class="hljs-comment">// prior input events.</span><br>    <span class="hljs-comment">/*如果分发一个按键事件,给一个窗口,那么这个窗口之前的input事件必须处理完,因为之前的事件可能改变焦点到另外一个窗口</span><br><span class="hljs-comment">    确保,key 事件被派发找正确的焦点窗口中,如果之前的事件未处理完,那么此key事件将pending,处理完之前的事件后再次发送*/</span><br>    <span class="hljs-keyword">if</span> (entry.type == EventEntry::Type::KEY) &#123;<br>        <span class="hljs-keyword">if</span> (shouldWaitToSendKeyLocked(currentTime, focusedWindowHandle-&gt;getName().c_str())) &#123;<br>            *nextWakeupTime = *mKeyIsWaitingForEventsTimeout;<br>            <span class="hljs-keyword">return</span> InputEventInjectionResult::PENDING;<br>        &#125;<br>    &#125;<br><br>    <span class="hljs-comment">// Success!  Output targets.找到派发目标</span><br>    addWindowTargetLocked(focusedWindowHandle,<br>                          InputTarget::FLAG_FOREGROUND | InputTarget::FLAG_DISPATCH_AS_IS,<br>                          BitSet32(<span class="hljs-number">0</span>), inputTargets);<br><br>    <span class="hljs-comment">// Done.</span><br>    <span class="hljs-keyword">return</span> InputEventInjectionResult::SUCCEEDED;<br>&#125;<br></code></pre></td></tr></table></figure>
+<p>上面的函数内容，涉及其他方面，可能看起来没那么容易理解， 我将判断<code>no focuse Window ANR</code>关键的部分抽出来(&#x2F;&#x2F; …表示已去除部分)<br>如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-function">InputEventInjectionResult <span class="hljs-title">InputDispatcher::findFocusedWindowTargetsLocked</span><span class="hljs-params">(</span></span><br><span class="hljs-params"><span class="hljs-function">        <span class="hljs-type">nsecs_t</span> currentTime, <span class="hljs-type">const</span> EventEntry&amp; entry, std::vector&lt;InputTarget&gt;&amp; inputTargets,</span></span><br><span class="hljs-params"><span class="hljs-function">        <span class="hljs-type">nsecs_t</span>* nextWakeupTime)</span> </span>&#123;<br>    std::string reason;<br><br>    <span class="hljs-type">int32_t</span> displayId = <span class="hljs-built_in">getTargetDisplayId</span>(entry);<br>    <span class="hljs-comment">// mFocusedWindowHandlesByDisplay在setInputWindowsLocked()里赋值</span><br>    sp&lt;InputWindowHandle&gt; focusedWindowHandle = <span class="hljs-built_in">getFocusedWindowHandleLocked</span>(displayId);<br>    <span class="hljs-comment">// mFocusedApplicationHandlesByDisplay在setFocusedApplication()里赋值</span><br>    std::shared_ptr&lt;InputApplicationHandle&gt; focusedApplicationHandle =<br>            <span class="hljs-built_in">getValueByKey</span>(mFocusedApplicationHandlesByDisplay, displayId);<br><br>    <span class="hljs-comment">//...如果当前没有焦点窗口和焦点应用程序，则删除该事件。</span><br>    <br>    <span class="hljs-comment">/*兼容性行为：</span><br><span class="hljs-comment">    如果存在焦点应用程序但没有焦点窗口，则引发 ANR。</span><br><span class="hljs-comment">    只有当我们有重点事件要调度时，才开始计数。</span><br><span class="hljs-comment">    如果我们开始通过触摸（app switch）与另一个应用程序交互，则 ANR 将被取消。</span><br><span class="hljs-comment">    如果将“无焦点窗口 ANR”移动到policy中，则可以删除此代码。输入不知道应用是否应具有焦点窗口。</span><br><span class="hljs-comment">    ---开始ANR检查</span><br><span class="hljs-comment">    */</span><br>    <span class="hljs-keyword">if</span> (focusedWindowHandle == <span class="hljs-literal">nullptr</span> &amp;&amp; focusedApplicationHandle != <span class="hljs-literal">nullptr</span>) &#123;<br>        <span class="hljs-keyword">if</span> (!mNoFocusedWindowTimeoutTime.<span class="hljs-built_in">has_value</span>()) &#123;<br>            <span class="hljs-comment">// 默认mNoFocusedWindowTimeoutTime没有值，第一次检查ANR会走下面这个流程</span><br><br>            <span class="hljs-comment">// DEFAULT_INPUT_DISPATCHING_TIMEOUT = 5s * HwTimeoutMultiplier();</span><br>            <span class="hljs-comment">// 默认input dispatch timeout时间时5s</span><br>            std::chrono::nanoseconds timeout = focusedApplicationHandle-&gt;<span class="hljs-built_in">getDispatchingTimeout</span>(<br>                    DEFAULT_INPUT_DISPATCHING_TIMEOUT);<br>            <span class="hljs-comment">// 给mNoFocusedWindowTimeoutTime赋值，触发ANR时会检查这个值是否为空，不为空才触发ANR</span><br>            mNoFocusedWindowTimeoutTime = currentTime + timeout.<span class="hljs-built_in">count</span>();<br>            <span class="hljs-comment">// 把当前的focusedApplicationHandle赋值给mAwaitedFocusedApplication，</span><br>            <span class="hljs-comment">//processAnrsLocked检查,ANR时会检查这个值是否为空，不为空才触发ANR</span><br>            mAwaitedFocusedApplication = focusedApplicationHandle;<span class="hljs-comment">//&lt;&lt;这里是关键</span><br>            mAwaitedApplicationDisplayId = displayId;<br>            <span class="hljs-built_in">ALOGW</span>(<span class="hljs-string">&quot;Waiting because no window has focus but %s may eventually add a &quot;</span><br>                  <span class="hljs-string">&quot;window when it finishes starting up. Will wait for %&quot;</span> PRId64 <span class="hljs-string">&quot;ms&quot;</span>,<br>                  mAwaitedFocusedApplication-&gt;<span class="hljs-built_in">getName</span>().<span class="hljs-built_in">c_str</span>(), <span class="hljs-built_in">millis</span>(timeout));<br>            *nextWakeupTime = *mNoFocusedWindowTimeoutTime;<br>            <span class="hljs-keyword">return</span> InputEventInjectionResult::PENDING;<br>        &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (currentTime &gt; *mNoFocusedWindowTimeoutTime) &#123;<br>            <span class="hljs-comment">// 已经发生ANR,并且需要丢掉该事件</span><br>            <span class="hljs-built_in">ALOGE</span>(<span class="hljs-string">&quot;Dropping %s event because there is no focused window&quot;</span>,<br>                  NamedEnum::<span class="hljs-built_in">string</span>(entry.type).<span class="hljs-built_in">c_str</span>());<br>            <span class="hljs-keyword">return</span> InputEventInjectionResult::FAILED;<br>        &#125; <span class="hljs-keyword">else</span> &#123;<br>            <span class="hljs-comment">// 继续等待焦点窗口</span><br>            <span class="hljs-keyword">return</span> InputEventInjectionResult::PENDING;<br>        &#125;<br>    &#125;<br>    <span class="hljs-comment">// ...窗口没有权限</span><br>    <span class="hljs-comment">//...窗口是paused</span><br>    <span class="hljs-comment">//...key事件派发 pending</span><br>    <span class="hljs-comment">//...成功找到焦点窗口</span><br>&#125;<br></code></pre></td></tr></table></figure>
+<p>从代码转述过来就是：<br>当第一次进来寻找焦点窗口时候，我设定一个时间值(<code>current+5s</code>)，当下一次或者第次过来获取焦点时候，判断是否获取到焦点窗口，如果还获取不到，那么就比较当前时间值是否超过之前设定的时间值。如果超时，那么就已经发生<code>ANR</code>了(这里不要误解，是指已经发生该类型<code>ANR</code>了，这里不是判断该种ANR的地方，只为了出现ANR后，后面的事件需要被<code>drop</code>丢掉而判断的)，需要将事件丢掉</p>
+<p>从中看出流程的关键在于，变量 </p>
+<ul>
+<li><code>focusedWindowHandle== null</code></li>
+<li><code>focusedApplicationHandle != null</code><br>这个条件成立，并且超时，才会赋值<code>mAwaitedFocusedApplication</code>，这个变量代表有等待获取焦点的<code>Application</code>，并且设置 <code>mNoFocusedWindowTimeoutTime</code> 时间，</li>
+</ul>
+<p><code>dispatchOnce()</code>中后面的anr检查<code>processAnrsLocked()</code>流程通过上面两个值的设定判断是否可能出现ANR</p>
+<p>回到<code>dispatchOnce()</code>中的ANR检查流程</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">InputDispatcher::dispatchOnce</span><span class="hljs-params">()</span> </span>&#123;<br>    <span class="hljs-type">nsecs_t</span> nextWakeupTime = LONG_LONG_MAX;<br>    &#123; <span class="hljs-comment">// acquire lock</span><br>        <span class="hljs-comment">//...事件派发</span><br>        <span class="hljs-comment">//检查是否发生ANR.</span><br>        <span class="hljs-type">const</span> <span class="hljs-type">nsecs_t</span> nextAnrCheck = <span class="hljs-built_in">processAnrsLocked</span>();<span class="hljs-comment">//&lt;&lt;&lt;</span><br>        nextWakeupTime = std::<span class="hljs-built_in">min</span>(nextWakeupTime, nextAnrCheck);<br>        <span class="hljs-comment">//...</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>检查我们是否正在等待一个聚焦窗口出现。如果等待时间过长，请发出 <code>ANR</code></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-function"><span class="hljs-type">nsecs_t</span> <span class="hljs-title">InputDispatcher::processAnrsLocked</span><span class="hljs-params">()</span> </span>&#123;<br>    <span class="hljs-type">const</span> <span class="hljs-type">nsecs_t</span> currentTime = <span class="hljs-built_in">now</span>();<br>    <span class="hljs-type">nsecs_t</span> nextAnrCheck = LONG_LONG_MAX;<br>    <span class="hljs-comment">// 在findFocusedWindowTargetsLocked()中，</span><br>    <span class="hljs-comment">// 如果focusedWindowHandle为空，focusedApplicationHandle不为空，以下条件就会满足</span><br>    <span class="hljs-keyword">if</span> (mNoFocusedWindowTimeoutTime.<span class="hljs-built_in">has_value</span>() &amp;&amp; mAwaitedFocusedApplication != <span class="hljs-literal">nullptr</span>) &#123;<br>        <span class="hljs-comment">// 第一次查找焦点窗口时候会设置 mNoFocusedWindowTimeoutTime 的值,如果当前时间超过了这个值</span><br>        <span class="hljs-comment">// 则代表寻找焦点窗口超时了,</span><br>        <span class="hljs-keyword">if</span> (currentTime &gt;= *mNoFocusedWindowTimeoutTime) &#123;<br>            <span class="hljs-comment">// 触发ANR流程，此处触发的ANR类型是xxx does not have a focused window</span><br>            <span class="hljs-built_in">processNoFocusedWindowAnrLocked</span>();<br>            mAwaitedFocusedApplication.<span class="hljs-built_in">reset</span>();<br>            mNoFocusedWindowTimeoutTime = std::<span class="hljs-literal">nullopt</span>;<br>            <span class="hljs-keyword">return</span> LONG_LONG_MIN;<br>        &#125; <span class="hljs-keyword">else</span> &#123; <span class="hljs-comment">//焦点还未找到,等待,并且将这期间的event事件 丢掉,并将下一次ANR检查时间设置为mNoFocusedWindowTimeoutTime</span><br>            <span class="hljs-comment">// Keep waiting. We will drop the event when mNoFocusedWindowTimeoutTime comes.</span><br>            nextAnrCheck = *mNoFocusedWindowTimeoutTime;<br>        &#125;<br>    &#125;<br>    <span class="hljs-comment">//..其他ANR</span><br>&#125;<br></code></pre></td></tr></table></figure>
+<p>流程:<br>即之前事件派发过程中，获取焦点窗口过程中，设置了两个变量，通过变量判断是否可能出现ANR　<br>当前时间超过了设置获取焦点时设置的时间(<code>mNoFocusedWindowTimeoutTime</code><br>)，<code>mAwaitedFocusedApplication</code> 还为空，还没有获取焦点的<code>window</code>.则可能要发出一个ANR。</p>
+<p>详细见 <code>processNoFocusedWindowAnrLocked()</code></p>
+<h3 id="processNoFocusedWindowAnrLocked"><a href="#processNoFocusedWindowAnrLocked" class="headerlink" title="processNoFocusedWindowAnrLocked"></a>processNoFocusedWindowAnrLocked</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-comment">/* 如果没有聚焦窗口，请发出 ANR。</span><br><span class="hljs-comment"> * 在发出 ANR 之前，请执行最终状态检查：</span><br><span class="hljs-comment"> * 1.当前关注的应用程序必须与我们正在等待的应用程序相同。</span><br><span class="hljs-comment"> * 2.确保我们仍然没有聚焦窗口。</span><br><span class="hljs-comment"> */</span><br><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">InputDispatcher::processNoFocusedWindowAnrLocked</span><span class="hljs-params">()</span> </span>&#123;<br>    <span class="hljs-comment">// 检查应用是否仍是刚刚获取焦点的应用,不是则可能我们用户切换应用了</span><br>    std::shared_ptr&lt;InputApplicationHandle&gt; focusedApplication =<br>            <span class="hljs-built_in">getValueByKey</span>(mFocusedApplicationHandlesByDisplay, mAwaitedApplicationDisplayId);<br>    <span class="hljs-keyword">if</span> (focusedApplication == <span class="hljs-literal">nullptr</span> ||<br>        focusedApplication-&gt;<span class="hljs-built_in">getApplicationToken</span>() !=<br>                mAwaitedFocusedApplication-&gt;<span class="hljs-built_in">getApplicationToken</span>()) &#123;<br>        <span class="hljs-built_in">ALOGE</span>(<span class="hljs-string">&quot;Waited for a focused window, but focused application has already changed to %s&quot;</span>,<br>              focusedApplication-&gt;<span class="hljs-built_in">getName</span>().<span class="hljs-built_in">c_str</span>());<br>        <span class="hljs-keyword">return</span>; <span class="hljs-comment">// The focused application has changed.</span><br>    &#125;<br><br>    <span class="hljs-type">const</span> sp&lt;InputWindowHandle&gt;&amp; focusedWindowHandle =<br>            <span class="hljs-built_in">getFocusedWindowHandleLocked</span>(mAwaitedApplicationDisplayId);<br>    <span class="hljs-keyword">if</span> (focusedWindowHandle != <span class="hljs-literal">nullptr</span>) &#123;<br>        <span class="hljs-keyword">return</span>; <span class="hljs-comment">// We now have a focused window. No need for ANR.</span><br>    &#125;<br>    <span class="hljs-comment">//走到这就是focusedApplication!=null,focusedWindowHandle == nullptr,触发ANR</span><br>    <span class="hljs-built_in">onAnrLocked</span>(mAwaitedFocusedApplication);<br>&#125;<br></code></pre></td></tr></table></figure>
+<p>这里将再次检查，我们之前获取焦点的应用是否还是之前的应用，如果不是则可能用户已经切换应用了，这种情况我们不希望发生ANR<br>打印log:<code>Waited for a focused window, but focused application has already changed to 新的应用包名</code></p>
+<p>下面 <code>onAnrLocked(mAwaitedFocusedApplication)</code> 则就是正式的触发<code>ANR</code>。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs CPP"><span class="hljs-comment">// 从processNoFocusedWindowAnrLocked()走过来的流程</span><br><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">InputDispatcher::onAnrLocked</span><span class="hljs-params">(std::shared_ptr&lt;InputApplicationHandle&gt; application)</span> </span>&#123;<br>    <span class="hljs-comment">// 这个流程走过来的ANR类型是xxx does not have a focused window</span><br>    std::string reason =<br>            <span class="hljs-built_in">StringPrintf</span>(<span class="hljs-string">&quot;%s does not have a focused window&quot;</span>, application-&gt;<span class="hljs-built_in">getName</span>().<span class="hljs-built_in">c_str</span>());<br>    <span class="hljs-built_in">updateLastAnrStateLocked</span>(*application, reason);<br><br>    <span class="hljs-comment">// 构建CommandEntry，在dispatchOnce时执行命令</span><br>    std::unique_ptr&lt;CommandEntry&gt; commandEntry = std::<span class="hljs-built_in">make_unique</span>&lt;CommandEntry&gt;(<br>            &amp;InputDispatcher::doNotifyNoFocusedWindowAnrLockedInterruptible);<span class="hljs-comment">//&lt;&lt;&lt;</span><br>    commandEntry-&gt;inputApplicationHandle = std::<span class="hljs-built_in">move</span>(application);<br>    <span class="hljs-comment">// 发送命令到mCommandQueue</span><br>    <span class="hljs-built_in">postCommandLocked</span>(std::<span class="hljs-built_in">move</span>(commandEntry));<br>&#125;<br></code></pre></td></tr></table></figure>
+<p>到这里我们就要思考出现此种类型的ANR的一些原因会是什么呢?</p>
+<p>该种类型的ANR主要着重点在于: “我想要给你派发输入事件，由于没有获取焦点的窗口，所以我没法给”，所以此种ANR应该为:事件派发途径受阻。所以问题主要还在于，InputDispater中维护的两个相关焦点的成员。</p>
+<ol>
+<li><strong>mFocusedApplicationHandlesByDisplay</strong> ： map类型 存放着有焦点的application</li>
+<li><strong>mWindowHandlesByDisplay</strong> ： map类型 存放着displayid的windowhandle</li>
+<li><strong>FocusResolver</strong> ：跟踪每个显示器的焦点窗口并确定焦点变化，和 <code>mWindowHandlesByDisplay</code> 一同可以确定有焦点的window</li>
+</ol>
+<h3 id="mFocusedApplicationHandlesByDisplay"><a href="#mFocusedApplicationHandlesByDisplay" class="headerlink" title="mFocusedApplicationHandlesByDisplay"></a>mFocusedApplicationHandlesByDisplay</h3><ol>
+<li>void onDisplayChanged(…)&lt;—ActivityRecord.java&#x2F;&#x2F;这里将会设置dc.<strong>setFocusedApp</strong>(this)</li>
+<li>onRemovedFromDisplay(…)&lt;—ActivityRecord.java&#x2F;&#x2F;setFocusedApp(null)</li>
+<li>setResumedActivityUncheckLocked(…)&lt;—ActivityTaskManagerService.java&#x2F;&#x2F;  当<strong>resume</strong>一个activity时候将会 final boolean changed &#x3D; r.mDisplayContent.setFocusedApp(r)</li>
+</ol>
+<p>上面三种渠道可以调用到下面的流程</p>
+<blockquote>
+<p>setFocusedApp(ActivityRecord newFocus)&lt;—-DisplayContent.java<br>—setFocusedAppLw(ActivityRecord newApp)&lt;—InputMonitor.java&#x2F;&#x2F;新的ActivityRecord所属的application设置Focused<br>——setFocusedApplication&lt;—inputDispather.cpp<br>———setFocusedApplicationLocked&lt;—inputDispather.cpp<br>————mFocusedApplicationHandlesByDisplay</p>
+</blockquote>
+<p>应用首先要确保 走到resume</p>
+<h3 id="mWindowHandlesByDisplay"><a href="#mWindowHandlesByDisplay" class="headerlink" title="mWindowHandlesByDisplay"></a>mWindowHandlesByDisplay</h3><blockquote>
+<p>—SurfaceFlinger::onMessageInvalidate(int64_t vsyncId, nsecs_t expectedVSyncTime)&lt;—SurfaceFlinger.cpp<br>——SurfaceFlinger::updateInputWindowInfo()&lt;—SurfaceFlinger.cpp<br>———benchmarkNotifyMotion和 setInputWindows&lt;—InputManager.cpp<br>————setInputWindows 和 displayRemoved&lt;—InputDispater.cpp<br>—————setInputWindowsLocked<br>——————updateWindowHandlesForDisplayLocked(        const std::vector&lt;sp<InputWindowHandle>&gt;&amp; inputWindowHandles, int32_t displayId)<br>———————mWindowHandlesByDisplay</p>
+</blockquote>
+<p>将涉及到SurfaceFlinger部分内容</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">MessageQueue::injectorCallback</span><span class="hljs-params">()</span> </span>&#123;<br>      <span class="hljs-type">ssize_t</span> n;<br>      DisplayEventReceiver::Event buffer[<span class="hljs-number">8</span>];<br>      <span class="hljs-keyword">while</span> ((n = DisplayEventReceiver::<span class="hljs-built_in">getEvents</span>(&amp;mInjector.tube, buffer, <span class="hljs-number">8</span>)) &gt; <span class="hljs-number">0</span>) &#123;<br>          <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> i = <span class="hljs-number">0</span>; i &lt; n; i++) &#123;<br>              <span class="hljs-keyword">if</span> (buffer[i].header.type == DisplayEventReceiver::DISPLAY_EVENT_VSYNC) &#123;<br>                  mHandler-&gt;<span class="hljs-built_in">dispatchInvalidate</span>(buffer[i].vsync.vsyncId,<br>                                               buffer[i].vsync.expectedVSyncTimestamp);<br>                  <span class="hljs-keyword">break</span>;<br>              &#125;<br>          &#125;<br>      &#125;<br>  &#125;<br><br><br><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">MessageQueue::vsyncCallback</span><span class="hljs-params">(<span class="hljs-type">nsecs_t</span> vsyncTime, <span class="hljs-type">nsecs_t</span> targetWakeupTime, <span class="hljs-type">nsecs_t</span> readyTime)</span> </span>&#123;<br>      <span class="hljs-built_in">ATRACE_CALL</span>();<br>      <span class="hljs-comment">// Trace VSYNC-sf</span><br>      mVsync.value = (mVsync.value + <span class="hljs-number">1</span>) % <span class="hljs-number">2</span>;<br>  <br>      &#123;<br>          <span class="hljs-function">std::lock_guard <span class="hljs-title">lock</span><span class="hljs-params">(mVsync.mutex)</span></span>;<br>          mVsync.lastCallbackTime = std::chrono::<span class="hljs-built_in">nanoseconds</span>(vsyncTime);<br>          mVsync.scheduled = <span class="hljs-literal">false</span>;<br>      &#125;<br>      mHandler-&gt;<span class="hljs-built_in">dispatchInvalidate</span>(mVsync.tokenManager-&gt;<span class="hljs-built_in">generateTokenForPredictions</span>(<br>                                           &#123;targetWakeupTime, readyTime, vsyncTime&#125;),<br>                                   vsyncTime);<br>  &#125;<br><br><br><span class="hljs-type">void</span> MessageQueue::Handler::<span class="hljs-built_in">dispatchInvalidate</span>(<span class="hljs-type">int64_t</span> vsyncId, <span class="hljs-type">nsecs_t</span> expectedVSyncTimestamp) &#123;<br>      <span class="hljs-keyword">if</span> ((mEventMask.<span class="hljs-built_in">fetch_or</span>(eventMaskInvalidate) &amp; eventMaskInvalidate) == <span class="hljs-number">0</span>) &#123;<br>          mVsyncId = vsyncId;<br>          mExpectedVSyncTime = expectedVSyncTimestamp;<br>          mQueue.mLooper-&gt;<span class="hljs-built_in">sendMessage</span>(<span class="hljs-keyword">this</span>, <span class="hljs-built_in">Message</span>(MessageQueue::INVALIDATE));<br>      &#125;<br>  &#125;<br></code></pre></td></tr></table></figure>
+
+
+
+
+
+<h4 id="启动一个新的Activity时候会发生焦点的切换"><a href="#启动一个新的Activity时候会发生焦点的切换" class="headerlink" title="启动一个新的Activity时候会发生焦点的切换"></a>启动一个新的Activity时候会发生焦点的切换</h4><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><code class="hljs cpp">------&gt;system_log<br><span class="hljs-comment">// 根据Intent 启动新的activity</span><br>I ActivityTaskManager: START u0 &#123;act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=<span class="hljs-number">0x10200000</span> cmp=com.google.android.apps.messaging/.ui.ConversationListActivity bnds=[<span class="hljs-number">193</span>,<span class="hljs-number">1099</span>][<span class="hljs-number">331</span>,<span class="hljs-number">1280</span>]&#125; from uid <span class="hljs-number">10042</span><br>------&gt;events_log<br><span class="hljs-comment">//创建新的Task,id为15,rootTaskid=-1</span><br>I wm_task_created: [<span class="hljs-number">15</span>,<span class="hljs-number">-1</span>] <br><br>------&gt;system_log<br><span class="hljs-comment">//到切换焦点函数的调用栈--scheduleUpdateInputWindows</span><br> I TAG     : TAG-scheduleUpdateInputWindows-TAG<br> I TAG     : java.lang.Throwable<br> I TAG     : 	at com.android.server.wm.InputMonitor.<span class="hljs-built_in">scheduleUpdateInputWindows</span>(InputMonitor.java:<span class="hljs-number">359</span>)<br> I TAG     : 	at com.android.server.wm.InputMonitor.<span class="hljs-built_in">updateInputWindowsLw</span>(InputMonitor.java:<span class="hljs-number">348</span>)<br> I TAG     : 	at com.android.server.wm.DisplayContent.<span class="hljs-built_in">layoutAndAssignWindowLayersIfNeeded</span>(DisplayContent.java:<span class="hljs-number">3590</span>)<br> I TAG     : 	at com.android.server.wm.Task.<span class="hljs-built_in">onChildPositionChanged</span>(Task.java:<span class="hljs-number">7722</span>)<br> I TAG     : 	at com.android.server.wm.WindowContainer.<span class="hljs-built_in">onChildAdded</span>(WindowContainer.java:<span class="hljs-number">581</span>)<br> I TAG     : 	at com.android.server.wm.WindowContainer.<span class="hljs-built_in">setParent</span>(WindowContainer.java:<span class="hljs-number">395</span>)<br> I TAG     : 	at com.android.server.wm.WindowContainer.<span class="hljs-built_in">addChild</span>(WindowContainer.java:<span class="hljs-number">571</span>)<br> I TAG     : 	at com.android.server.wm.Task.<span class="hljs-built_in">addChild</span>(Task.java:<span class="hljs-number">1714</span>)<br> I TAG     : 	at com.android.server.wm.Task.<span class="hljs-built_in">addChild</span>(Task.java:<span class="hljs-number">1759</span>)<br> I TAG     : 	at com.android.server.wm.ActivityStarter.<span class="hljs-built_in">addOrReparentStartingActivity</span>(ActivityStarter.java:<span class="hljs-number">2706</span>)<br> I TAG     : 	at com.android.server.wm.ActivityStarter.<span class="hljs-built_in">setNewTask</span>(ActivityStarter.java:<span class="hljs-number">2683</span>)<br> I TAG     : 	at com.android.server.wm.ActivityStarter.<span class="hljs-built_in">startActivityInner</span>(ActivityStarter.java:<span class="hljs-number">1736</span>)<br> I TAG     : 	at com.android.server.wm.ActivityStarter.<span class="hljs-built_in">startActivityUnchecked</span>(ActivityStarter.java:<span class="hljs-number">1571</span>)<br> I TAG     : 	at com.android.server.wm.ActivityStarter.<span class="hljs-built_in">executeRequest</span>(ActivityStarter.java:<span class="hljs-number">1177</span>)<br> I TAG     : 	at com.android.server.wm.ActivityStarter.<span class="hljs-built_in">execute</span>(ActivityStarter.java:<span class="hljs-number">665</span>)<br> I TAG     : 	at com.android.server.wm.ActivityTaskManagerService.<span class="hljs-built_in">startActivityAsUser</span>(ActivityTaskManagerService.java:<span class="hljs-number">1227</span>)<br> I TAG     : 	at com.android.server.wm.ActivityTaskManagerService.<span class="hljs-built_in">startActivityAsUser</span>(ActivityTaskManagerService.java:<span class="hljs-number">1199</span>)<br> I TAG     : 	at com.android.server.wm.ActivityTaskManagerService.<span class="hljs-built_in">startActivity</span>(ActivityTaskManagerService.java:<span class="hljs-number">1174</span>)<br> I TAG     : 	at android.app.IActivityTaskManager$Stub.<span class="hljs-built_in">onTransact</span>(IActivityTaskManager.java:<span class="hljs-number">900</span>)<br> I TAG     : 	at com.android.server.wm.ActivityTaskManagerService.<span class="hljs-built_in">onTransact</span>(ActivityTaskManagerService.java:<span class="hljs-number">5081</span>)<br> I TAG     : 	at android.os.Binder.<span class="hljs-built_in">execTransactInternal</span>(Binder.java:<span class="hljs-number">1179</span>)<br> I TAG     : 	at android.os.Binder.<span class="hljs-built_in">execTransact</span>(Binder.java:<span class="hljs-number">1143</span>)<br><br><br><span class="hljs-comment">//Task移动,Taskid=15,1表示朝顶部移动(如果为0表示朝底部移动),8为角标index</span><br>I wm_task_moved: [<span class="hljs-number">15</span>,<span class="hljs-number">1</span>,<span class="hljs-number">8</span>]<br><span class="hljs-comment">//taskid=15的task 被带到前台,显示在最前面,即屏幕</span><br>I wm_task_to_front: [<span class="hljs-number">0</span>,<span class="hljs-number">15</span>]<br><span class="hljs-comment">//一个新的task正在创建,userId=0,taskid=15</span><br>I wm_create_task: [<span class="hljs-number">0</span>,<span class="hljs-number">15</span>]<br><span class="hljs-comment">//创建一个activity</span><br>I wm_create_activity: [<span class="hljs-number">0</span>,<span class="hljs-number">60142361</span>,<span class="hljs-number">15</span>,com.google.android.apps.messaging/.ui.ConversationListActivity,android.intent.action.MAIN,<span class="hljs-literal">NULL</span>,<span class="hljs-literal">NULL</span>,<span class="hljs-number">270532608</span>]<br>I wm_task_moved: [<span class="hljs-number">15</span>,<span class="hljs-number">1</span>,<span class="hljs-number">8</span>]<br>I wm_pause_activity: [<span class="hljs-number">0</span>,<span class="hljs-number">96699712</span>,com.TAG.launcher/com.android.searchlauncher.SearchLauncher,userLeaving=<span class="hljs-literal">true</span>,pauseBackTasks]<br>I wm_on_top_resumed_lost_called: [<span class="hljs-number">96699712</span>,com.android.searchlauncher.SearchLauncher,topStateChangedWhenResumed]<br>I wm_on_paused_called: [<span class="hljs-number">96699712</span>,com.android.searchlauncher.SearchLauncher,performPause]<br>I wm_add_to_stopping: [<span class="hljs-number">0</span>,<span class="hljs-number">96699712</span>,com.TAG.launcher/com.android.searchlauncher.SearchLauncher,makeInvisible]<br></code></pre></td></tr></table></figure>
+
+
+
+
+<p>焦点窗口更新相关 <a target="_blank" rel="noopener" href="https://juejin.cn/post/6955857985151336484">https://juejin.cn/post/6955857985151336484</a></p>
+<hr>
+<p>NoFocusedWindowANR </p>
+<ul>
+<li>需确认 Input 的焦点是否正确切换： </li>
+<li>− 如果 Input 焦点正确切换，则需要检查窗口信息是否正确。 窗口信息是 WMS 设置，由 SurfaceFlinger 传入，可以查看 Log 中 Layer 信息以及发生 ANR 后 dump 的窗口信息，来判断窗口信息是否正常。 </li>
+<li>− 如果 Input 焦点未正确切换，需要查看应用生命周期等情况。</li>
+</ul>
+<hr>
+<h3 id="Windowstate获取焦点的条件"><a href="#Windowstate获取焦点的条件" class="headerlink" title="Windowstate获取焦点的条件"></a>Windowstate获取焦点的条件</h3><blockquote>
+<p>frameworks&#x2F;base&#x2F;services&#x2F;core&#x2F;java&#x2F;com&#x2F;android&#x2F;server&#x2F;wm&#x2F;DisplayContent.java<br>搜索 mFindFocusedWindow</p>
+</blockquote>
+<ol>
+<li><p>如果<code>WindowState</code>不能接收<code>Input事件</code>，则不能作为焦点窗口；(<br><code>WindowState</code>可以接受<code>Input</code>事件，需要同时满足多个条件)</p>
+<ol>
+<li><code>isVisibleOrAdding()</code>方法为<code>true</code>，表示该<code>WindowState</code>可见或处于添加过程中</li>
+<li><code>mViewVisibility</code>属性为<code>View.VISIBLE</code>，表示客户端View可见；     </li>
+<li><code>mRemoveOnExit</code>为false，表示<code>WindowState</code>的退出动画不存在</li>
+<li><code>mAttrs.flags</code>中不存在<code>FLAG_NOT_FOCUSABLE</code>标记，该标记如果设置，表示该窗口为不可获焦窗口；</li>
+<li><code>mActivityRecord</code>为<code>null</code>或者<code>mActivityRecord</code>可获焦;</li>
+<li><code>cantReceiveTouchInput()</code>方法为<code>false</code>，表示可以接受Touch事件</li>
+</ol>
+</li>
+<li><p>如果没有前台<code>Activity</code>，则当前<code>WindowState</code>作为焦点窗口返回；</p>
+</li>
+<li><p>如果前台<code>Activity</code>是不可获焦状态，则当前<code>WindowState</code>作为焦点窗口返回；</p>
+</li>
+<li><p>如果当前<code>WindowState</code>由<code>ActivityRecord</code>管理，且该<code>WindowState</code>不是<code>Staring Window</code>类型，那么当前台<code>Activity</code>在当前<code>WindowState</code>所属<code>Activity</code>之上时，不存在焦点窗口；</p>
+</li>
+<li><p>如果以上条件都不满足，则当前<code>WindowState</code>作为焦点窗口返回</p>
+</li>
+</ol>
+<p>从上面InputDispatcher侧分析来看，无焦点窗口ANR主要原因点在WMS，只有熟悉WMS后对该类问题才能有更清晰的认识<br>未完待续…</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E6%9C%BA%E5%88%B6/" class="category-chain-item">机制</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/%E6%9C%BA%E5%88%B6/ANR/" class="category-chain-item">ANR</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/%E6%9C%BA%E5%88%B6/ANR/Application-does-not-have-a-focused-window/" class="category-chain-item">Application_does_not_have_a_focused_window</a>
+  
+  
+
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E7%B3%BB%E7%BB%9F%E6%A6%82%E5%BF%B5%E5%8E%9F%E7%90%86/" class="print-no-link">#系统概念原理</a>
+      
+        <a href="/tags/ANR/" class="print-no-link">#ANR</a>
+      
+    </div>
+  
+</div>
+
+
+              
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2024/03/18/4_Hung-%E5%90%84%E5%B9%B3%E5%8F%B0Hung%E6%9C%BA%E5%88%B6%E4%BB%8B%E7%BB%8D/" title="Hung-各平台Hung机制介绍">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Hung-各平台Hung机制介绍</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2019/07/22/hello-world2/" title="Hello World">
+                        <span class="hidden-mobile">Hello World</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

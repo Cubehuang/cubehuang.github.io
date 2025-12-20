@@ -1,0 +1,708 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/site_icon.png">
+  <link rel="icon" href="/main_wallpapers/site_icon_2.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#37AFE1">
+  <meta name="author" content="CubeHuang">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="基于 Android 15(2024&#x2F;5&#x2F;22时间的在线android源码)  InputReader 模块负责将原始的输入事件读取出来，以及加工处理。 接下来需要 InputDispatcher 模块来完成事件的派发工作。  在 InputDispatcher 模块中重要的事情：  首要事情：将InputReader 传过来的事件派发出去，派送到应用端，事务特点：这个事件最重">
+<meta property="og:type" content="article">
+<meta property="og:title" content="InputDispatcher概览">
+<meta property="og:url" content="http://example.com/2024/05/22/5_InputDispatcher%E6%A6%82%E8%A7%88/">
+<meta property="og:site_name" content="Cubehuang_blog">
+<meta property="og:description" content="基于 Android 15(2024&#x2F;5&#x2F;22时间的在线android源码)  InputReader 模块负责将原始的输入事件读取出来，以及加工处理。 接下来需要 InputDispatcher 模块来完成事件的派发工作。  在 InputDispatcher 模块中重要的事情：  首要事情：将InputReader 传过来的事件派发出去，派送到应用端，事务特点：这个事件最重">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/blog_imgs/5_InputDispatcher/Image.png">
+<meta property="og:image" content="http://example.com/blog_imgs/5_InputDispatcher/Image_1.png">
+<meta property="og:image" content="http://example.com/blog_imgs/5_InputDispatcher/Image_2.png">
+<meta property="og:image" content="http://example.com/blog_imgs/5_InputDispatcher/Image_3.png">
+<meta property="og:image" content="http://example.com/blog_imgs/5_InputDispatcher/anrnofocusedwindow.png">
+<meta property="article:published_time" content="2024-05-22T02:18:21.000Z">
+<meta property="article:modified_time" content="2025-05-27T14:41:26.000Z">
+<meta property="article:author" content="CubeHuang">
+<meta property="article:tag" content="Input">
+<meta property="article:tag" content="系统概念原理">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/blog_imgs/5_InputDispatcher/Image.png">
+  
+  
+  
+  <title>InputDispatcher概览 - Cubehuang_blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":["home","post","category","about","links","archive"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"left","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>CubeHuang</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/main_wallpapers/wp_1.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="InputDispatcher概览"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2024-05-22 10:18" pubdate>
+          2024年5月22日 上午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          2.5k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          22 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="padding-left: 2rem; margin-right: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">InputDispatcher概览</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>基于 Android 15(2024&#x2F;5&#x2F;22时间的在线android源码)</p>
+<ul>
+<li><code>InputReader</code> 模块负责将原始的输入事件读取出来，以及加工处理。</li>
+<li>接下来需要 <code>InputDispatcher</code> 模块来完成事件的派发工作。</li>
+</ul>
+<p>在 <code>InputDispatcher</code> 模块中重要的事情：</p>
+<ul>
+<li><strong>首要事情</strong>：将<code>InputReader</code> 传过来的事件派发出去，派送到应用端，<strong>事务特点</strong>：这个事件最重要，不能耽搁，必须及时派发出去</li>
+<li><strong>次要事情</strong>： 在<code>InputDispatcher</code> 派发事件时候，难免会有一些杂项事情需要处理(比如说咨询WMS，这个事件如何处理，需要不要拦截，以及应用端处理完事件后，<code>InputDispatcher</code>需要做什么收尾工作等等)，这些都是杂项的事情.需要<code>InputDispatcher</code> 线程进行处理。 <strong>事务特点</strong>：事情杂乱，相对派发事件没有那么紧急。</li>
+<li><strong>最后事情</strong>： 对于事件派发，需要检测事件派发过程中有没有异常。即：对于特殊事件能不能及时找到焦点窗口（派发这些事件需要一个焦点），对于派发出去的事件，应用端有没有及时完成处理。这里就是我们所描述的几种ANR中的两种。</li>
+</ul>
+<p>简单归纳：</p>
+<ol>
+<li>取事件并派发</li>
+<li>杂项事情处理</li>
+<li>监测事件派发是否异常(ANR)</li>
+</ol>
+<p>到这里可以看一下 <code>InputDispatcher::dispatchOnce()</code>函数的实现。<br>可以看到:</p>
+<ol>
+<li>取事件并派发–<code>dispatchOnceInnerLocked(..)</code></li>
+<li>杂项事情处理–<code>runCommandsLockedInterruptable()</code></li>
+<li>监测事件派发是否异常(ANR)–<code>processAnrsLocked()</code></li>
+</ol>
+<p>这样看是不是简单许多</p>
+<p>我们来看这三项事情如何实现？就能熟悉 <code>InputDispatcher</code> 模块</p>
+<p>接下来继续梳理框架，比较重要一点的细节会梳理处理，不重要的细节会略过</p>
+<h2 id="部分一-InputDispatcher取事件派发"><a href="#部分一-InputDispatcher取事件派发" class="headerlink" title="部分一.InputDispatcher取事件派发."></a>部分一.InputDispatcher取事件派发.</h2><h3 id="1-1-dispatchOnceInnerLocked-取事件"><a href="#1-1-dispatchOnceInnerLocked-取事件" class="headerlink" title="1.1 dispatchOnceInnerLocked 取事件"></a>1.1 dispatchOnceInnerLocked 取事件</h3><p>既然取事件，派发事件那么就会有如下问题。<br><strong>问题1</strong>: <code>InputDispatcher</code>要取输入事件，要从哪里取，或者说从<code>InputReader</code>读取处理的事件被存放在哪里了?</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-comment">//frameworks/native/services/inputflinger/dispatcher/InputDispatcher.h</span><br>std::deque&lt;std::shared_ptr&lt;<span class="hljs-type">const</span> EventEntry&gt;&gt; <span class="hljs-function">mInboundQueue <span class="hljs-title">GUARDED_BY</span><span class="hljs-params">(mLock)</span></span>;<br></code></pre></td></tr></table></figure>
+<p>存放在一个名为<code>mInboundQueue</code>的队列中.<code>InputDispatcher</code> 中输入事件以 <code>EventEntry</code> 形式存放。</p>
+<p>那么<code>InputDispatcher</code>中，第一件事情：从<code>mInboundQueue</code>队列 中取事件</p>
+<p>代码实现在 <code>dispatchOnceInnerLocked</code> 中第一步取事件。</p>
+<p>取完事件后，<br><code>问题2</code>： 取完事件后的下一步干什么?</p>
+<ul>
+<li>取完事件后下一步，派发事件，但是各个事件类别种类较多9种</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-number">1.</span> CONFIGURATION_CHANGED,<br><span class="hljs-number">2.</span> DEVICE_RESET,<br><span class="hljs-number">3.</span> FOCUS,<br><span class="hljs-number">4.</span> KEY,<br><span class="hljs-number">5.</span> MOTION,<br><span class="hljs-number">6.</span> SENSOR,<br><span class="hljs-number">7.</span> POINTER_CAPTURE_CHANGED,<br><span class="hljs-number">8.</span> DRAG,<br><span class="hljs-number">9.</span> TOUCH_MODE_CHANGED,<br></code></pre></td></tr></table></figure>
+<ul>
+<li>而且不同事件的派发方式也不一样.所以这里要分开处理针对每一种输入事件类型不同，不同特性，要分别去处理.</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">InputDispatcher::dispatchOnceInnerLocked</span><span class="hljs-params">(<span class="hljs-type">nsecs_t</span>* nextWakeupTime)</span> </span>&#123;<br>    <span class="hljs-type">nsecs_t</span> currentTime = <span class="hljs-built_in">now</span>();<br><br>    <span class="hljs-number">1.</span>取事件<br>    <span class="hljs-number">2.</span>针对不同输入事件，进行分别派发<br>     <span class="hljs-number">2.1</span> CONFIGURATION_CHANGED: <br>        <span class="hljs-built_in">dispatchConfigurationChangedLocked</span>(...);<br><br>     <span class="hljs-number">2.2</span> DEVICE_RESET:<br>        <span class="hljs-built_in">dispatchDeviceResetLocked</span>(...);<br><br>     <span class="hljs-number">2.3</span> FOCUS:<br>        <span class="hljs-built_in">dispatchFocusLocked</span>(...);<br><br>     <span class="hljs-number">2.4</span> TOUCH_MODE_CHANGED: <br>        <span class="hljs-built_in">dispatchTouchModeChangeLocked</span>(...);<br><br>     <span class="hljs-number">2.5</span> POINTER_CAPTURE_CHANGED: <br>        <span class="hljs-built_in">dispatchPointerCaptureChangedLocked</span>(...);<br><br>     <span class="hljs-number">2.5</span> DRAG: <br>        <span class="hljs-built_in">dispatchDragLocked</span>(...);<br><br>     <span class="hljs-number">2.6</span> KEY: <br>        <span class="hljs-built_in">dispatchKeyLocked</span>(...);<br><br>     <span class="hljs-number">2.7</span> MOTION: <br>        <span class="hljs-built_in">dispatchMotionLocked</span>(...);<br> <br>     <span class="hljs-number">2.8</span> SENSOR: &#123;<br>        <span class="hljs-built_in">dispatchSensorLocked</span>(...);<br>&#125;<br></code></pre></td></tr></table></figure>
+<ul>
+<li>从<code>mInboundQueue</code>队列中取出事件</li>
+<li>针对9种不同事件，去做特殊处理.使用函数<code>dispatchXXXLocked(...)</code>(XXX：事件类型)</li>
+</ul>
+<p>对于<code>dispatchXXXLocked(...)</code>来说，针对9种事件暂时不去每一个都理解，这属于不同类型事件的特殊性做特殊处理</p>
+<p><strong>问题</strong>：如何派发事件?给谁派发事件这是关键?<br>： <code>dispatchXXXLocked(...)</code> 流程处理后，大多数事件的派发都会走到<code>dispatchEventLocked</code>中。<br>这时候需要接收各类型输入事件的派发目标(Input窗口).那就分为两步：</p>
+<ul>
+<li>找到需要接收各类事件的窗口-目标窗口， 由于不同事件，派发的目标窗口不同，所以这里就不同输入事件查找目标窗口来说较大区别，但是明确无论有查找目标窗口的过程有多大区别，查找的结果都是一样：目标窗口</li>
+<li>针对目标窗口派发对应事件。</li>
+</ul>
+<p>这里我们需要思考一下： <code>InputDispatcher模块</code> 属于<code>InputManagerService</code> 服务运行在<code>system_server</code>进程， 输入事件需要派发给应用进程，给应用进程提供事务驱动源.那么他们是如何完成通信的呢?也即输入事件通过什么进程间通信方式传给应用进程呢?</p>
+<ul>
+<li><strong>进程间通信方式</strong>：<code>pipe</code>、<code>socket</code>、<code>binder</code>等等<br>这里选择的是 <code>socket</code>，准确来说是 <code>socketpair</code></li>
+</ul>
+<p>这里可以引入一个图片：<br><img src="/blog_imgs/5_InputDispatcher/Image.png" srcset="/img/loading.gif" lazyload alt="329793dba4574a7fc0acb9960fe7f176.png"><br>生成两个<code>fd</code>，<strong>fd1</strong>和<strong>fd2</strong> 用来实现双向通信<br><img src="/blog_imgs/5_InputDispatcher/Image_1.png" srcset="/img/loading.gif" lazyload alt="dac676578e526a71b526b6019919dfd4.png"><br>这里是重点，需要着重强调。</p>
+<p>既然作为通信的两端(<strong>ServerChannel</strong>和<strong>ClientChannel</strong>)</p>
+<ul>
+<li><code>ServerChannel</code>：一端要存在<code>system_server进程</code>的<code>InputDispatcher 模块</code>中。</li>
+<li><code>ClientChannel</code>： 另外一端则存在于应用进程中，这样来实现事件派发。</li>
+</ul>
+<p><strong>问题</strong>： 应用进程如何拿到这个所谓的<code>ClientChannel</code>(<strong>fd2</strong>)?</p>
+<p>下图是Android 11时候的<br><img src="/blog_imgs/5_InputDispatcher/Image_2.png" srcset="/img/loading.gif" lazyload alt="d017548c3c465bbaabb1adc358207d87.png"><br>可以看到 socketpair 是在 WMS 模块进行创建，并分配到IputDispatcher 和 应用进程。<br>下图是Android 15的</p>
+<p><img src="/blog_imgs/5_InputDispatcher/Image_3.png" srcset="/img/loading.gif" lazyload alt="18ca3bc2cdf7b3f7d2fd98599b2f6b39.png"></p>
+<p>两者差别不大， 区别L：15 上将<strong>socketpair</strong>的创建放在了<strong>InputDispatcher</strong>中。</p>
+<p>大致流程：</p>
+<ol>
+<li>应用进程 <code>addwindow</code> 时候，<code>Binder</code>通信通知 <code>WMS</code> 。</li>
+<li><code>WMS</code> 将创建 <code>windowState</code> ，然后通知 <code>InputDispatcher</code>，创建 <code>Socketpair</code> ，并将其中一端返回给 <code>WMS</code> ， <code>WMS</code>进一步<code>Binder</code>通信返回给应用进程。</li>
+<li>应用进程拿到 <code>fd</code> 后，就可以通过 <code>epoll</code> 进行监听，主线程读取 <code>InputDispatcher</code> 传过来的消息。</li>
+</ol>
+<p>在 <code>InputDispatcher</code> 中，<code>Socketpair</code>的另一端将封装成一个个的<code>connection</code>中，如上图。<br>回到刚才的流程： 针对目标窗口派方法事件，通过目标窗口找到对应的<code>connection</code>，进而通过<code>connection</code>封装的<strong>fd</strong> 写入输入事件，应用程序就可以收到。</p>
+<p>对于事件的派发大致流程就如上，比较模糊的点：</p>
+<ul>
+<li>针对不同事件，如何找到目标派发的窗口–TODO</li>
+<li>给应用程序除了发送事件信息，还发送了些什么?–TODO</li>
+</ul>
+<h2 id="部分二：InputDispatcher杂项处理"><a href="#部分二：InputDispatcher杂项处理" class="headerlink" title="部分二：InputDispatcher杂项处理"></a>部分二：InputDispatcher杂项处理</h2><p>部分一处理的是关键任务：事件的派发，派发过程中难免会有额外的事情需要处理。<br>例如：</p>
+<ol>
+<li>对于处理<strong>configuration</strong>这个事件时，需要让WMS知道。</li>
+<li>处理<code>key事件</code>派发前，咨询一些WMS要不要先响应这个事件。</li>
+<li>等等各类事务。</li>
+</ol>
+<p>在这一块上，<code>InputDispatcher</code>中，进行了封装.将所有这些事件都抽象成一个<code>command</code>，然后构建一个队列： <code>mCommandQueue</code>。只要有杂项事务需要处理，就封装一个<code>command</code>，存到 <code>mCommandQueue</code> 中。<code>InputDispatcher</code>线程不断监测这个队列是否有事件，有事件就处理。</p>
+<p>查看<code>InputDispatcher::dispatchOnce()</code>函数的实现。<br>2. 杂项事情处理–<code>runCommandsLockedInterruptable()</code></p>
+<p>这块其实框架并不复杂，对于三个部分的处理其实都是在<code>inputDispatcher</code> 线程本身在处理。所谓的<code>command</code>只不过是一个的函数指针，使用一个函数指针队列(<code>mCommandQueue</code>)将各个函数接口存放在一起，这里的处理框架比init进程中的处理框架<code>ActionManager</code>简单得多。在<code>InputDispatcher</code>中直接使用一个函数指针队列存放各个杂项事务，主线程监听函数指针队列(<code>mCommandQueue</code>)，有事务就进行处理。</p>
+<h2 id="部分三：InputDispatcher事件派发监测"><a href="#部分三：InputDispatcher事件派发监测" class="headerlink" title="部分三：InputDispatcher事件派发监测"></a>部分三：InputDispatcher事件派发监测</h2><p>对于<code>ANR</code>的监测是比较细节的，我们这里只梳理大概框架，两类<code>ANR</code>的剖析换另外一篇文章阐述。<br>这里有两种检测：</p>
+<ul>
+<li><strong>派发事件过程中</strong>能否及时获取到焦点窗口-无焦点窗口ANR</li>
+<li>事件派发完后，应用进程能否及时处理完-事件处理耗时ANR</li>
+</ul>
+<p>对于部分一：</p>
+<ul>
+<li>针对不同事件，如何找到派发事件的目标窗口。<br>这一块对于<code>key事件</code>，<code>motion事件</code>有些特殊。这里需要确切的找到焦点窗口，如果没有及时的找到那是不行的，事件是无法继续往后派发的。</li>
+</ul>
+<p>焦点窗口是由WMS进行设置的，所以我们需要WMS时刻给我们传焦点窗口过来(这里把sf和WMS说一块，都是WMS模块，实际上是WMS设置完转交给sf，sf再传给InputDispatcher中)。</p>
+<p>我们需要使用一个数据结构来进行存放</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><br>std::unordered_map&lt;<span class="hljs-type">int32_t</span> /* displayId */, NamedToken&gt; mFocusedWindowTokenByDisplay<br></code></pre></td></tr></table></figure>
+
+<p>提供两个外部访问的接口：</p>
+<ul>
+<li><strong>setFocusedWindow</strong></li>
+<li><strong>setInputWindows</strong></li>
+</ul>
+<p><strong>无焦点窗口ANR监测原理</strong>： 首次找不到焦点窗口时候设置一个定时时间值，下一次再次查找焦点窗口时候，当前时间超过设定的时间值，则触发anr。</p>
+<p><strong>输入事件处理超时ANR检测原理</strong>： 当向对应的窗口发送完输入事件后，由于情况有：多个窗口，或者一个窗口，接收多个事件，所以使用一个数据结构：<strong>map</strong>。向目标窗口派发一个事件后，封装一个<strong>超时时间值</strong>以及<strong>窗口识别标识</strong>存入map中，检查时候，如果从map中取出来的最早的时间超过了当前时间则，触发anr。</p>
+<p>检查的代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-function"><span class="hljs-type">nsecs_t</span> <span class="hljs-title">InputDispatcher::processAnrsLocked</span><span class="hljs-params">()</span> </span>&#123;<br>    <span class="hljs-comment">//...</span><br>	<span class="hljs-comment">//#### 无焦点窗口anr检测</span><br>    <span class="hljs-comment">// Check if we are waiting for a focused window to appear. Raise ANR if waited too long</span><br>    <span class="hljs-keyword">if</span> (currentTime &gt;= *mNoFocusedWindowTimeoutTime) &#123;<br>        <span class="hljs-built_in">processNoFocusedWindowAnrLocked</span>();<span class="hljs-comment">//&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;触发无焦点窗口anr处理</span><br>        <span class="hljs-keyword">return</span> LLONG_MIN;<br>    &#125;<br>    <span class="hljs-comment">//...</span><br>    <span class="hljs-comment">//#### 输入事件超时anr检测</span><br>    <span class="hljs-comment">// Check if any connection ANRs are due</span><br>    nextAnrCheck = std::<span class="hljs-built_in">min</span>(nextAnrCheck, mAnrTracker.<span class="hljs-built_in">firstTimeout</span>());<br>    <span class="hljs-keyword">if</span> (currentTime &lt; nextAnrCheck) &#123; <br>        <span class="hljs-keyword">return</span> nextAnrCheck;          <br>    &#125;<br>    <span class="hljs-comment">//...</span><br>    <span class="hljs-built_in">onAnrLocked</span>(connection);<span class="hljs-comment">//&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;触发输入事件处理超时处理</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+
+<p><img src="/blog_imgs/5_InputDispatcher/anrnofocusedwindow.png" srcset="/img/loading.gif" lazyload alt="3481e9ce8cd1efb7fcef41576b756202.png"></p>
+<p>(图片将杂项处理部分去掉了)</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ol>
+<li><code>InputDispatcher</code> 主要做的事情就是派发事件</li>
+<li>检查派发的事件是否正常</li>
+</ol>
+<p>1.1 <strong>预处理</strong>，派发事件的过程中先对事件进行预处理，预处理需要找到关键事件派发的目标窗口等各项事情。对于 <code>key</code> 合 <code>motion</code> 事件需要找到焦点窗口，找窗口的过程中，进行计时 <code>mNoFocusedWindowTimeout</code> ，超时则触发anr。<br>1.2 <strong>最终派发事件</strong>，然后通过<code>connection</code>封装socketpair的一端， 将事件先放入<code>connection</code>中的 <code>outboundQueue</code> 中，等事件发送出去后(已经往fd中写入值后)，将 <code>outboundQueue</code> 中的事件取出来，放到 <code>waitQueue</code> 中代表事件还没有被消费完，其次将开始计时，计时时间放入<code>mAnrTracker</code> 集合中。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E7%B3%BB%E7%BB%9F%E6%A6%82%E5%BF%B5%E5%8E%9F%E7%90%86/" class="print-no-link">#系统概念原理</a>
+      
+        <a href="/tags/Input/" class="print-no-link">#Input</a>
+      
+    </div>
+  
+</div>
+
+
+              
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2025/03/20/3_ANR_failed_to_complete_startup/" title="ANR-failed to complete startup">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">ANR-failed to complete startup</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2024/03/18/4_Hung-%E5%90%84%E5%B9%B3%E5%8F%B0Hung%E6%9C%BA%E5%88%B6%E4%BB%8B%E7%BB%8D/" title="Hung-各平台Hung机制介绍">
+                        <span class="hidden-mobile">Hung-各平台Hung机制介绍</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
