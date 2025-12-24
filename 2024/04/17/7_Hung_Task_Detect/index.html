@@ -1,0 +1,712 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/site_icon.png">
+  <link rel="icon" href="/main_wallpapers/site_icon_2.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#37AFE1">
+  <meta name="author" content="CubeHuang">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="1.Hung Task Detect机制kernel 中 hung task detect 机制的核心目的就是为了检测那些处于 D 状态且长时间无法被调度运行的进程，如果存在这类进程则 kernel认为这些进程是异常的，会在kernel 日志中打印这些长时间D状态的进程堆栈信息，如果有必要则还可能触发panic。 2. D 状态-TASK_UNINTERRUPTIBLE2.1 问题：那么什么 是">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Hung Task Detect机制介绍">
+<meta property="og:url" content="http://example.com/2024/04/17/7_Hung_Task_Detect/">
+<meta property="og:site_name" content="Cubehuang_blog">
+<meta property="og:description" content="1.Hung Task Detect机制kernel 中 hung task detect 机制的核心目的就是为了检测那些处于 D 状态且长时间无法被调度运行的进程，如果存在这类进程则 kernel认为这些进程是异常的，会在kernel 日志中打印这些长时间D状态的进程堆栈信息，如果有必要则还可能触发panic。 2. D 状态-TASK_UNINTERRUPTIBLE2.1 问题：那么什么 是">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/blog_imgs/7_Hung_Task_Detect/Image.png">
+<meta property="article:published_time" content="2024-04-17T05:57:30.000Z">
+<meta property="article:modified_time" content="2025-12-24T07:41:26.000Z">
+<meta property="article:author" content="CubeHuang">
+<meta property="article:tag" content="Hung">
+<meta property="article:tag" content="系统概念原理">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/blog_imgs/7_Hung_Task_Detect/Image.png">
+  
+  
+  
+  <title>Hung Task Detect机制介绍 - Cubehuang_blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":["home","post","category","about","links","archive"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"left","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>CubeHuang</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/main_wallpapers/wp_1.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Hung Task Detect机制介绍"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2024-04-17 13:57" pubdate>
+          2024年4月17日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          2.8k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          24 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="padding-left: 2rem; margin-right: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Hung Task Detect机制介绍</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p><img src="/blog_imgs/7_Hung_Task_Detect/Image.png" srcset="/img/loading.gif" lazyload alt="进程状态轮转"><br><linux_kernel_development></p>
+<h2 id="1-Hung-Task-Detect机制"><a href="#1-Hung-Task-Detect机制" class="headerlink" title="1.Hung Task Detect机制"></a>1.Hung Task Detect机制</h2><p><code>kernel</code> 中 <code>hung task detect</code> 机制的核心目的就是为了检测那些处于 <code>D</code> 状态且长时间无法被调度运行的进程，如果存在这类进程则 <code>kernel</code>认为这些进程是异常的，会在<code>kernel</code> 日志中打印这些长时间<code>D</code>状态的进程堆栈信息，如果有必要则还可能触发<code>panic</code>。</p>
+<h2 id="2-D-状态-TASK-UNINTERRUPTIBLE"><a href="#2-D-状态-TASK-UNINTERRUPTIBLE" class="headerlink" title="2. D 状态-TASK_UNINTERRUPTIBLE"></a>2. D 状态-TASK_UNINTERRUPTIBLE</h2><h3 id="2-1-问题：那么什么-是-D-状态的进程？D状态进程有什么特点？"><a href="#2-1-问题：那么什么-是-D-状态的进程？D状态进程有什么特点？" class="headerlink" title="2.1 问题：那么什么 是 D 状态的进程？D状态进程有什么特点？"></a>2.1 问题：那么什么 是 D 状态的进程？D状态进程有什么特点？</h3><figure class="highlight gherkin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><code class="hljs gherkin">                                    <span class="hljs-symbol">*</span><br>                                    |<span class="hljs-string"></span><br><span class="hljs-string">                                    </span>|<span class="hljs-string"> task</span><br><span class="hljs-string">                                    </span>|<span class="hljs-string"> forks</span><br><span class="hljs-string">                                    v</span><br><span class="hljs-string">                     +------------------------------+</span><br><span class="hljs-string">                     </span>|<span class="hljs-string">           TASK_NEW           </span>|<br>                     |<span class="hljs-string">        (Ready to run)        </span>|<br>                     +------------------------------+<br>                                    |<span class="hljs-string"></span><br><span class="hljs-string">                                    </span>|<br>                                    v<br>                  +------------------------------------+<br>                  |<span class="hljs-string">            TASK_RUNNING            </span>|<br>+---------------&gt; |<span class="hljs-string">           (Ready to run)           </span>|<span class="hljs-string"> &lt;--+</span><br><span class="hljs-string"></span>|<span class="hljs-string">                 +------------------------------------+    </span>|<br>|<span class="hljs-string">                   </span>|<span class="hljs-string">                                       </span>|<br>|<span class="hljs-string">                   </span>|<span class="hljs-string"> schedule() calls context_switch()     </span>|<span class="hljs-string"> task is preempted</span><br><span class="hljs-string"></span>|<span class="hljs-string">                   v                                       </span>|<br>|<span class="hljs-string">                 +------------------------------------+    </span>|<br>|<span class="hljs-string">                 </span>|<span class="hljs-string">            TASK_RUNNING            </span>|<span class="hljs-string">    </span>|<br>|<span class="hljs-string">                 </span>|<span class="hljs-string">             (Running)              </span>|<span class="hljs-string"> ---+</span><br><span class="hljs-string"></span>|<span class="hljs-string"> event occurred  +------------------------------------+</span><br><span class="hljs-string"></span>|<span class="hljs-string">                   </span>|<br>|<span class="hljs-string">                   </span>|<span class="hljs-string"> task needs to wait for event</span><br><span class="hljs-string"></span>|<span class="hljs-string">                   v</span><br><span class="hljs-string"></span>|<span class="hljs-string">                 +------------------------------------+</span><br><span class="hljs-string"></span>|<span class="hljs-string">                 </span>|<span class="hljs-string">         TASK_INTERRUPTIBLE         </span>|<br>|<span class="hljs-string">                 </span>|<span class="hljs-string">        TASK_UNINTERRUPTIBLE        </span>|<br>+-----------------|<span class="hljs-string">           TASK_WAKEKILL            </span>|<br>                  +------------------------------------+<br>                                    |<span class="hljs-string"></span><br><span class="hljs-string">                                    </span>|<span class="hljs-string"> task exits via do_exit()</span><br><span class="hljs-string">                                    v</span><br><span class="hljs-string">                     +------------------------------+</span><br><span class="hljs-string">                     </span>|<span class="hljs-string">          TASK_DEAD           </span>|<br>                     |<span class="hljs-string">         EXIT_ZOMBIE          </span>|<br>                     +------------------------------+<br><br></code></pre></td></tr></table></figure>
+
+<blockquote>
+<p>从内核调度的角度来讲，进程的状态通常主要在运行和不运行（休眠）之间切换。休眠状态又可分为可中断休眠（TASK_INTERRUPTIBLE）和不可中断休眠（TASK_UNINTERRUPTIBLE）。<br>从字面意思上看，不可中断休眠（TASK_UNINTERRUPTIBLE） 这种状态下的进程似乎比可中断休眠（TASK_INTERRUPTIBLE）进程更为严格，毕竟不可被中断。确实是这样的，对于内核来说，使用 TASK_UNINTERRUPTIBLE 的条件比使用 TASK_INTERRUPTIBLE 更为严苛的，并且内核推荐少使用TASK_UNINTERRUPTIBLE。</p>
+</blockquote>
+<p><strong>特点</strong>：<br>1.<strong>是否可以被信号中断</strong>：<br><code>TASK_INTERRUPTIBLE</code>：进程在休眠等待期间可被信号打断<br><code>TASK_UNINTERRUPTIBLE</code>： 进程在休眠等待期间不能被信号打断<br>2.两者虽然都是休眠状态，但是为了进一步区别，他们的<strong>进程状态标识不一样</strong><br><code>TASK_INTERRUPTIBLE</code>：<strong>S</strong><br><code>TASK_UNINTERRUPTIBLE</code>：<strong>D</strong><br>3. <strong>唤醒源区别</strong>：<br><code>TASK_INTERRUPTIBLE</code>：两个唤醒源①：等待事件完成②：收到信号<br><code>TASK_UNINTERRUPTIBLE</code>：一个唤醒源①：等待事件完成</p>
+<p>4.<strong>使用场景不同</strong><br><code>TASK_INTERRUPTIBLE</code>：强调：等一件相对没那么关键的事情<br>例如：</p>
+<ul>
+<li>用户输入</li>
+<li>等socket数据</li>
+<li>等普通锁</li>
+<li>等调度资源</li>
+<li>如果被中断，可重新来过重新处理</li>
+</ul>
+<p><code>TASK_UNINTERRUPTIBLE</code>：强调：等一件“必须完成，无法回滚”的事情<br>例如：</p>
+<ul>
+<li>磁盘I&#x2F;O已下发</li>
+<li>文件系统元数据已经提交</li>
+<li>块设备flush</li>
+<li>某些硬件、驱动的响应</li>
+<li>关键内核路径的资源释放</li>
+<li>假如它是可以被中断的，可能导致内核状态不一致或者数据损害等严重问题</li>
+<li>弊端：假如等待的事件一直无法完成，那么就会造成进程死等，可能影响到其他进程，进而可能造成系统卡死，影响系统稳定性。</li>
+</ul>
+<p>5.<strong>内核宏观角度来说着重点不同</strong>：<br><code>TASK_INTERRUPTIBLE</code>： 强调“可控性”-优点<br><code>TASK_UNINTERRUPTIBLE</code>：强调“一致性”-优点</p>
+<h3 id="2-2-TASK-UNINTERRUPTIBLE-弊端"><a href="#2-2-TASK-UNINTERRUPTIBLE-弊端" class="headerlink" title="2.2 TASK_UNINTERRUPTIBLE 弊端"></a>2.2 TASK_UNINTERRUPTIBLE 弊端</h3><p>如上所述<code>TASK_UNINTERRUPTIBLE</code> 安全一致性好，可控性差。<br>弊端1：进程无法被杀死（由于不可被信号中断）<br>弊端2：如果等待的条件意外无法达成，一直死等拖垮系统，只能重启系统恢复<br>弊端3：调试定位困难，进程无法<code>attach</code>，只能通过堆栈等信息确认<br>弊端4：不占用<code>CPU</code>，但是会被统计进入<code> load average</code>（衡量：系统无法完成的工作量，D状态进程任务也被包含其中）中</p>
+<p>针对弊端1，内核已经衍生出<code>TASK_KILLABLE</code>的进程状态，该状态的进程虽然是不可中断休眠，但是它收到 <code>fatal</code> 信号能够被杀。</p>
+<h2 id="3-Hung-Task-Detect原理"><a href="#3-Hung-Task-Detect原理" class="headerlink" title="3. Hung Task Detect原理"></a>3. Hung Task Detect原理</h2><p><code>hung task detect 机制</code> 就是针对于弊端2和弊端3进行改善，对于长时间的 <code>TASK_UNINTERRUPTIBLE</code> 进程进行监控，打印堆栈日志，必要时重启系统。<br>由于一个进程可能短时间进入 <code>TASK_UNINTERRUPTIBLE</code> 状态，随后等待的事件完成了，进程退出 <code>TASK_UNINTERRUPTIBLE</code> 状态得以运行 <code>TASK_RUNNING</code>，但随后有需要进入 <code>TASK_UNINTERRUPTIBLE</code> 进行等待，进程在这种情况下通常来说是正常行为，我们需要监控的是长时间未被调度过的进程。</p>
+<h3 id="3-1-监控原理："><a href="#3-1-监控原理：" class="headerlink" title="3.1 监控原理："></a>3.1 监控原理：</h3><p>是否存在超过120s都未发生过调度的 <code>TASK_UNINTERRUPTIBLE</code> 进程，如果存在，则打印出该进程堆栈信息，必要时重启系统。</p>
+<h3 id="3-2-问题1：如何判断Task长时间未发生调度？"><a href="#3-2-问题1：如何判断Task长时间未发生调度？" class="headerlink" title="3.2 问题1：如何判断Task长时间未发生调度？"></a>3.2 问题1：如何判断Task长时间未发生调度？</h3><p>主要依据task结构中的两个值：nvcsw 和 nivcsw</p>
+<ul>
+<li><code>nvcsw</code>：n（Number of）v（Voluntary）c（Context）sw（Switch），<code>Number of Voluntary Context Switch</code>，自愿上下文切换次数</li>
+<li><code>nivcsw</code>：n（Number of）iv（Involuntary）c（Context）sw（Switch），<code>Number of Involuntary Context Switch</code>，非自愿上下文切换次数</li>
+</ul>
+<p><code>nvcsw</code>： 主要统计的是因为自身原因<strong>主动放弃CPU</strong>的次数，场景：等待资源、主动调用sleep、等锁等<br><code>nivcsw</code>：主要统计的是因为外部原因<strong>被动放弃CPU</strong>的次数，场景：时间片用完、被高优先级进程抢占</p>
+<p>当这两个值，任意一个值发生改变都代表进程的被调度过，无论是自愿或者非自愿。如果在长时间120s之外，进程的这两个值都没有发生过改变（增加），那么说明进程一直未能被调度。并且它还是 <code>D</code> 状态，我们认为这个进程可能存在异常。</p>
+<h2 id="4-源码梳理"><a href="#4-源码梳理" class="headerlink" title="4. 源码梳理"></a>4. 源码梳理</h2><p>接下来我们对源码进行梳理</p>
+<h3 id="4-1-hung-task-初始化"><a href="#4-1-hung-task-初始化" class="headerlink" title="4.1 hung_task 初始化"></a>4.1 hung_task 初始化</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><code class="hljs c">kernel<span class="hljs-number">-6.6</span>/kernel/hung_task.c<br><br><br><span class="hljs-type">static</span> <span class="hljs-type">int</span> __init <span class="hljs-title function_">hung_task_init</span><span class="hljs-params">(<span class="hljs-type">void</span>)</span><br>&#123;<br>	<span class="hljs-comment">// 注册panic通知链，作用：当系统正在panic时候。不应该出现hung task detect机制panic的干扰，以免影响之前的panic日志</span><br>	atomic_notifier_chain_register(&amp;panic_notifier_list, &amp;panic_block);<br><br>	<span class="hljs-comment">// 注册PM管理通知链，作用：设备休眠期间，CPU停止运行，所有task均不会被调度，暂停hung_task监测，防止误报</span><br>	pm_notifier(hungtask_pm_notify, <span class="hljs-number">0</span>);<br>    <span class="hljs-comment">// 创建并启动“hungtaskd”内核守护线程</span><br>	watchdog_task = kthread_run(watchdog, <span class="hljs-literal">NULL</span>, <span class="hljs-string">&quot;khungtaskd&quot;</span>);<br>	<span class="hljs-comment">// 初始化hung_task相关Sysctl节点（proc/sys/kernel下）作用：通过设定节点值控制hung_task行为</span><br>	hung_task_sysctl_init();<br><br>	<span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br>&#125;<br><br><span class="hljs-type">static</span> <span class="hljs-type">int</span> <span class="hljs-title function_">watchdog</span><span class="hljs-params">(<span class="hljs-type">void</span> *dummy)</span><br>&#123;<br>	<span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> hung_last_checked = jiffies;<br>    <span class="hljs-comment">//设置线程nice值 0</span><br>	set_user_nice(current, <span class="hljs-number">0</span>);<br>    <span class="hljs-comment">//守护线程：死循环</span><br>	<span class="hljs-keyword">for</span> ( ; ; ) &#123;<br>		<span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> timeout = sysctl_hung_task_timeout_secs;<span class="hljs-comment">//120s</span><br>		<span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> interval = sysctl_hung_task_check_interval_secs;<span class="hljs-comment">//0s</span><br>		<span class="hljs-type">long</span> t;<br>		<span class="hljs-keyword">if</span> (interval == <span class="hljs-number">0</span>)<br>			interval = timeout;<br>		interval = <span class="hljs-type">min_t</span>(<span class="hljs-type">unsigned</span> <span class="hljs-type">long</span>, interval, timeout);<span class="hljs-comment">//120s</span><br>		t = hung_timeout_jiffies(hung_last_checked, interval);<span class="hljs-comment">//计算休眠时间，小于0代表已经120s没有做hung检查了，需要要做hung 检查，</span><br>		<span class="hljs-keyword">if</span> (t &lt;= <span class="hljs-number">0</span>) &#123;<br>			<span class="hljs-comment">//reset_hung_task用于外部取消hung_task检测，hung_detector_suspended用于控制设备休眠，是否开启hung_task检测</span><br>			<span class="hljs-keyword">if</span> (!<span class="hljs-type">atomic_xchg</span>(&amp;reset_hung_task, <span class="hljs-number">0</span>) &amp;&amp;<br>			    !hung_detector_suspended)<br>				check_hung_uninterruptible_tasks(timeout);<span class="hljs-comment">//检查</span><br>			hung_last_checked = jiffies;<br>			<span class="hljs-keyword">continue</span>;<br>		&#125;<br>		schedule_timeout_interruptible(t);<span class="hljs-comment">//设置进程休眠（TASK_INTERRUPTIBLE）休眠时间t</span><br>	&#125;<br><br>	<span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+<p><strong>初始化</strong>：</p>
+<ul>
+<li>注册<code>panic</code>通知链，作用：当系统正在<code>panic</code>时候。不应该有<code>hung task detect</code> 机制<code>panic</code>的干扰，以免影响之前 <code>panic</code> 日志信息。</li>
+<li>注册<code>PM</code>管理通知链，作用：设备休眠期间，CPU停止运行，所有task均不会被调度，暂停<code>hung task detect </code>机制，防止误报。</li>
+<li>创建并启动“<strong>hungtaskd</strong>”内核守护线程</li>
+<li>初始化<code>hung task</code>相关<code>Sysctl</code>节点（<code>proc/sys/kernel</code>下）作用：通过设定节点值控制<code>hung task</code>行为。</li>
+</ul>
+<p><strong>守护线程-hungtaskd</strong>：</p>
+<ul>
+<li>线程<code>nice</code>为0</li>
+<li>开启死循环每隔120s进行<code>hung task</code> 检测一次，其他时间休眠（<code>TASK_INTERRUPTIBLE</code>）</li>
+<li>检测前提条件：没有外部模块取消<code>hung task</code> 检测 以及 设备未在休眠</li>
+<li>进行检测-<code>check_hung_uninterruptible_tasks</code></li>
+</ul>
+<h3 id="4-2-遍历所有D状态Task-check-hung-uninterruptible-tasks"><a href="#4-2-遍历所有D状态Task-check-hung-uninterruptible-tasks" class="headerlink" title="4.2 遍历所有D状态Task-check_hung_uninterruptible_tasks"></a>4.2 遍历所有D状态Task-check_hung_uninterruptible_tasks</h3><p>在内核由于遍历所有<code>task</code>是一个比较耗时且比较危险的任务，造成系统阻塞。所以在遍历所有线程时候，要分时段进行遍历，所以下面的代码在遍历时候进行了一些<code>RCU</code>锁的处理</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><code class="hljs c"> <span class="hljs-comment">//遍历系统所有进程，检查处于UNINTERRUPTIBLE 状态的task</span><br><span class="hljs-type">static</span> <span class="hljs-type">void</span> <span class="hljs-title function_">check_hung_uninterruptible_tasks</span><span class="hljs-params">(<span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> timeout)</span><br>&#123;<br>	<span class="hljs-type">int</span> max_count = sysctl_hung_task_check_count;<span class="hljs-comment">//4194304</span><br>	<span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> last_break = jiffies;<br>	<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">task_struct</span> *<span class="hljs-title">g</span>, *<span class="hljs-title">t</span>;</span><br>	<span class="hljs-type">bool</span> need_check = <span class="hljs-literal">true</span>;<br><br>	<span class="hljs-comment">/*</span><br><span class="hljs-comment">	 * If the system crashed already then all bets are off,</span><br><span class="hljs-comment">	 * do not report extra hung tasks:</span><br><span class="hljs-comment">	 */</span><br>	<span class="hljs-keyword">if</span> (test_taint(TAINT_DIE) || did_panic)<br>		<span class="hljs-keyword">return</span>;<br><br>	hung_task_show_lock = <span class="hljs-literal">false</span>;<br>	rcu_read_lock();<br>	for_each_process_thread(g, t) &#123;<span class="hljs-comment">//for_each_process_thread是双重循环，先遍历所有进程，所有进程中的所有线程</span><br>		<span class="hljs-type">unsigned</span> <span class="hljs-type">int</span> state;<br><br>		<span class="hljs-keyword">if</span> (!max_count--)<br>			<span class="hljs-keyword">goto</span> unlock;<br>		<span class="hljs-keyword">if</span> (time_after(jiffies, last_break + HUNG_TASK_LOCK_BREAK)) &#123;<span class="hljs-comment">//检查是否处理太久</span><br>			<span class="hljs-keyword">if</span> (!rcu_lock_break(g, t))<span class="hljs-comment">//暂时释放RCU锁</span><br>				<span class="hljs-keyword">goto</span> unlock;<br>			last_break = jiffies;<br>		&#125;<br>		<span class="hljs-comment">/*</span><br><span class="hljs-comment">		 * skip the TASK_KILLABLE tasks -- these can be killed</span><br><span class="hljs-comment">		 * skip the TASK_IDLE tasks -- those are genuinely idle</span><br><span class="hljs-comment">		 */</span><br>		trace_android_vh_check_uninterruptible_tasks(t, timeout, &amp;need_check);<span class="hljs-comment">//hook点</span><br>		<span class="hljs-comment">//只检查 TASK_UNINTERRUPTIBLE 的task</span><br>		<span class="hljs-keyword">if</span> (need_check) &#123;<br>			state = READ_ONCE(t-&gt;__state);<br>			<span class="hljs-keyword">if</span> ((state &amp; TASK_UNINTERRUPTIBLE) &amp;&amp;<br>			    !(state &amp; TASK_WAKEKILL) &amp;&amp;<br>			    !(state &amp; TASK_NOLOAD))<br>				check_hung_task(t, timeout);<span class="hljs-comment">//检查</span><br>		&#125;<br>	&#125;<br>	trace_android_vh_check_uninterruptible_tasks_dn(<span class="hljs-literal">NULL</span>);<span class="hljs-comment">//hook点</span><br> unlock:<br>	rcu_read_unlock();<br>	<span class="hljs-comment">//是打印日志信息，是否重启系统</span><br>	<span class="hljs-keyword">if</span> (hung_task_show_lock)<br>		debug_show_all_locks();<br><br>	<span class="hljs-keyword">if</span> (hung_task_show_all_bt) &#123;<br>		hung_task_show_all_bt = <span class="hljs-literal">false</span>;<br>		trigger_all_cpu_backtrace();<br>	&#125;<br><br>	<span class="hljs-keyword">if</span> (hung_task_call_panic)<br>		panic(<span class="hljs-string">&quot;hung_task: blocked tasks&quot;</span>);<br>&#125;<br></code></pre></td></tr></table></figure>
+<ul>
+<li>系统处于<code>panic</code>流程或者设备休眠过程中不做检查</li>
+<li>只检查 <code>TASK_UNINTERRUPTIBLE</code> 状态的<code>task</code></li>
+<li>检测前后有<code>hook</code>点</li>
+<li><code>check_hung_task</code> 检测<code>task</code>是否长时间未发生调度 </li>
+<li>日志打印或者<code>panic</code>重启系统</li>
+</ul>
+<h3 id="4-3-Task是否长时间未调度-check-hung-task"><a href="#4-3-Task是否长时间未调度-check-hung-task" class="headerlink" title="4.3 Task是否长时间未调度-check_hung_task"></a>4.3 Task是否长时间未调度-check_hung_task</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">static</span> <span class="hljs-type">void</span> <span class="hljs-title function_">check_hung_task</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> task_struct *t, <span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> timeout)</span><br>&#123;<br>	<span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> switch_count = t-&gt;nvcsw + t-&gt;nivcsw;<span class="hljs-comment">//统计自愿和非自愿放弃cpu的次数</span><br><br>	<span class="hljs-comment">/*</span><br><span class="hljs-comment">	 * Ensure the task is not frozen.</span><br><span class="hljs-comment">	 * Also, skip vfork and any other user process that freezer should skip.</span><br><span class="hljs-comment">	 */</span><br>	 <span class="hljs-comment">//跳过刚fork出来和被freezer的进程</span><br>	<span class="hljs-keyword">if</span> (unlikely(READ_ONCE(t-&gt;__state) &amp; TASK_FROZEN))<br>		<span class="hljs-keyword">return</span>;<br><br>	<span class="hljs-comment">/*</span><br><span class="hljs-comment">	 * When a freshly created task is scheduled once, changes its state to</span><br><span class="hljs-comment">	 * TASK_UNINTERRUPTIBLE without having ever been switched out once, it</span><br><span class="hljs-comment">	 * musn&#x27;t be checked.</span><br><span class="hljs-comment">	 */</span><br>	 <span class="hljs-comment">//刚创建出来没有被调度过的task跳过</span><br>	<span class="hljs-keyword">if</span> (unlikely(!switch_count))<br>		<span class="hljs-keyword">return</span>;<br>    <span class="hljs-comment">//上次检查时的switch_count值是否等于这次检查的switch_count值，如果是则没有被调度过</span><br>	<span class="hljs-keyword">if</span> (switch_count != t-&gt;last_switch_count) &#123;<br>		t-&gt;last_switch_count = switch_count;<br>		t-&gt;last_switch_time = jiffies;<br>		<span class="hljs-keyword">return</span>;<br>	&#125;<br>	<span class="hljs-comment">//未调度过的时间是否超过120s</span><br>	<span class="hljs-keyword">if</span> (time_is_after_jiffies(t-&gt;last_switch_time + timeout * HZ))<br>		<span class="hljs-keyword">return</span>;<br><br>	trace_sched_process_hang(t);<br>    <span class="hljs-comment">//设置了panic，则打印日志信息，默认不打开</span><br>	<span class="hljs-keyword">if</span> (sysctl_hung_task_panic) &#123;<br>		console_verbose();<br>		hung_task_show_lock = <span class="hljs-literal">true</span>;<br>		hung_task_call_panic = <span class="hljs-literal">true</span>;<br>	&#125;<br><br>	<span class="hljs-comment">/*</span><br><span class="hljs-comment">	 * Ok, the task did not get scheduled for more than 2 minutes,</span><br><span class="hljs-comment">	 * complain:</span><br><span class="hljs-comment">	 */</span><br>	 <span class="hljs-comment">//kernel log中打印该task的堆栈信息</span><br>	<span class="hljs-keyword">if</span> (sysctl_hung_task_warnings) &#123;<span class="hljs-comment">//默认十次</span><br>		<span class="hljs-keyword">if</span> (sysctl_hung_task_warnings &gt; <span class="hljs-number">0</span>)<br>			sysctl_hung_task_warnings--;<br>		pr_err(<span class="hljs-string">&quot;INFO: task %s:%d blocked for more than %ld seconds.\n&quot;</span>,<br>		       t-&gt;comm, t-&gt;pid, (jiffies - t-&gt;last_switch_time) / HZ);<br>		pr_err(<span class="hljs-string">&quot;      %s %s %.*s\n&quot;</span>,<br>			print_tainted(), init_utsname()-&gt;release,<br>			(<span class="hljs-type">int</span>)<span class="hljs-built_in">strcspn</span>(init_utsname()-&gt;version, <span class="hljs-string">&quot; &quot;</span>),<br>			init_utsname()-&gt;version);<br>		pr_err(<span class="hljs-string">&quot;\&quot;echo 0 &gt; /proc/sys/kernel/hung_task_timeout_secs\&quot;&quot;</span><br>			<span class="hljs-string">&quot; disables this message.\n&quot;</span>);<br>		sched_show_task(t);<br>		hung_task_show_lock = <span class="hljs-literal">true</span>;<br><br>		<span class="hljs-keyword">if</span> (sysctl_hung_task_all_cpu_backtrace)<br>			hung_task_show_all_bt = <span class="hljs-literal">true</span>;<br>		<span class="hljs-keyword">if</span> (!sysctl_hung_task_warnings)<br>			pr_info(<span class="hljs-string">&quot;Future hung task reports are suppressed, see sysctl kernel.hung_task_warnings\n&quot;</span>);<br>	&#125;<br><br>	touch_nmi_watchdog();<br>&#125;<br></code></pre></td></tr></table></figure>
+<ul>
+<li>根据<code>t-&gt;nvcsw + t-&gt;nivcsw</code> 的值来决定<code>task</code>是否被调度过，刚<code>fork</code>出来的<code>task</code>、从未被调度过的<code>task</code>、<code>freezer</code>的<code>task</code>以及未被调度时间没有超过<code>120s</code>的task将会被跳过</li>
+<li><code>kernel log</code>打印该<code>task</code>的堆栈信息</li>
+</ul>
+<h3 id="4-4-一句话原理小结："><a href="#4-4-一句话原理小结：" class="headerlink" title="4.4 一句话原理小结："></a>4.4 一句话原理小结：</h3><p><code>hungtaskd</code> 进程每隔 <strong>120s</strong> (<code>hung_task_check_interval_secs</code>) 起来检测一次是否存在 <strong>120s</strong> (<code>hung_task_timeout_secs</code>)未被调度过的<code>D状态进程</code></p>
+<ul>
+<li>如果存在，那么根据 <code>hung_task_all_cpu_backtrace</code> 决定是否 <code>dump</code> 所有<code>cpu backtrace</code>到<code>kernel log</code>中、以及根据 <code>hung_task_panic</code> 决定是否触发 <code>panic</code>、以及将该<code>D状态进程backtrace</code>信息输出到<code>kernel log</code>中</li>
+<li>检测完，休眠 <strong>120s</strong>。</li>
+</ul>
+<h2 id="5-hung-task-其他参数信息"><a href="#5-hung-task-其他参数信息" class="headerlink" title="5. hung_task 其他参数信息"></a>5. hung_task 其他参数信息</h2><h3 id="5-1-内核宏控"><a href="#5-1-内核宏控" class="headerlink" title="5.1 内核宏控"></a>5.1 内核宏控</h3><ul>
+<li><strong>CONFIG_DETECT_HUNG_TASK</strong>：控制内核是否开启 <code>hung task</code> 检测机制，默认打开y</li>
+<li><strong>CONFIG_DEFAULT_HUNG_TASK_TIMEOUT</strong>：默认超时时间<strong>120s</strong>，判断<code>tas</code>k多长时间未被调用</li>
+<li><strong>CONFIG_BOOTPARAM_HUNG_TASK_PANIC</strong>：<code>hung task</code> 检测到异常则直接<code>panic</code>，默认不开</li>
+</ul>
+<p>可以使用<code>unzip</code>过滤内核宏控文件得到系统是否有开 <code>hung task</code> 相关宏</p>
+<ul>
+<li><code>gunzip -c /proc/config.gz|grep -Ei hung</code></li>
+</ul>
+<h3 id="5-2-内核节点信息"><a href="#5-2-内核节点信息" class="headerlink" title="5.2 内核节点信息"></a>5.2 内核节点信息</h3><p>如果有root权限的话可以通过修改节点值来控制 <code>hung task</code> 机制的行为<br>节点信息如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs c">/proc/sys/kernel $ ls |grep hung<br>hung_task_all_cpu_backtrace<br>hung_task_check_count<br>hung_task_check_interval_secs<br>hung_task_panic<br>hung_task_timeout_secs<br>hung_task_warnings<br></code></pre></td></tr></table></figure>
+<ul>
+<li><strong>hung_task_all_cpu_backtrace</strong> ：打印所有<code>CPU</code>的<code>backtrace</code>到<code>kernel log</code>中，默认<code>0</code>，不打印，1打印</li>
+<li><strong>hung_task_check_count</strong>：检查task数量上限，默认值：<code>PID_MAX_LIMIT</code></li>
+<li><strong>hung_task_check_interval_secs</strong>：<code>hung task</code>多久检查一次的时间（其实就是线程间隔多久检查一次的时间），默认值是上述宏控120s，检测时此值和宏控值比较，谁小使用谁</li>
+<li><strong>hung_task_panic</strong>：<code>hung task</code> 检测到异常是否panic，默认值为 <code>CONFIG_BOOTPARAM_HUNG_TASK_PANIC</code> ，<code>1</code>则触发 <code>panic</code>，<code>0</code>则不触发 panic</li>
+<li><strong>hung_task_timeout_secs</strong>：可修改的超时时长（判断<code>D状态进程</code>多久未被调度），默认值是 <code>CONFIG_DEFAULT_HUNG_TASK_TIMEOUT</code></li>
+<li><strong>hung_task_warnings</strong>：在hung task检测期间，如果有长时间未被调度的<code>D状态task</code>，则会在 <code>kernel log</code> 打印对于 <code>task</code> 的 <code>backtrace</code> 信息，该值代表检测期间，能打印 <code>backtrace</code> 的次数，默认<code>10</code>次</li>
+</ul>
+<h2 id="6-总结"><a href="#6-总结" class="headerlink" title="6. 总结"></a>6. 总结</h2><ul>
+<li><code>Hung task</code> : 长时间未被调度的 不可中断休眠 进程。</li>
+<li><code>Detect</code>：每隔120s 检查一次是否存在这样的<code>Hung task</code>，存在则输出日志，必要时则重启恢复。</li>
+</ul>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E6%9C%BA%E5%88%B6/" class="category-chain-item">机制</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/%E6%9C%BA%E5%88%B6/Hung/" class="category-chain-item">Hung</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E7%B3%BB%E7%BB%9F%E6%A6%82%E5%BF%B5%E5%8E%9F%E7%90%86/" class="print-no-link">#系统概念原理</a>
+      
+        <a href="/tags/Hung/" class="print-no-link">#Hung</a>
+      
+    </div>
+  
+</div>
+
+
+              
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2024/05/22/5_InputDispatcher%E6%A6%82%E8%A7%88/" title="InputDispatcher概览">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">InputDispatcher概览</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2024/03/18/4_Hung-%E5%90%84%E5%B9%B3%E5%8F%B0Hung%E6%9C%BA%E5%88%B6%E4%BB%8B%E7%BB%8D/" title="Hung-各平台Hung机制介绍">
+                        <span class="hidden-mobile">Hung-各平台Hung机制介绍</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
