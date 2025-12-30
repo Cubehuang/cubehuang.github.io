@@ -330,7 +330,7 @@
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-number">02</span><span class="hljs-number">-26</span> <span class="hljs-number">21</span>:<span class="hljs-number">39</span>:<span class="hljs-number">26.345</span>  <span class="hljs-number">1672</span> <span class="hljs-number">13615</span> I am_anr  : [<span class="hljs-number">0</span>,<span class="hljs-number">12825</span>,com.example.myapplication,<span class="hljs-number">552124230</span>,Process ProcessRecord&#123;<span class="hljs-number">24</span>d<span class="hljs-number">36e3</span> <span class="hljs-number">12825</span>:com.example.myapplication/u0a139&#125; failed to complete startup]<br></code></pre></td></tr></table></figure>
 
 <h2 id="5-排查点"><a href="#5-排查点" class="headerlink" title="5.排查点"></a>5.排查点</h2><h3 id="5-1-从应用角度："><a href="#5-1-从应用角度：" class="headerlink" title="5.1 从应用角度："></a>5.1 从应用角度：</h3><ul>
-<li>排查重写的<code>Application</code>的<code>oncreate</code>的方法是否耗时</li>
+<li>排查重写的<code>Application</code>的<code>oncreate</code>方法是否耗时</li>
 <li>主要需要排查<code>main</code> log中主线程打印出来的日志是否存在耗时异常，根据日志排查代码</li>
 <li>可以多<code>dump</code>几次<code>anr trace</code>信息，从t<code>race</code>中看主线程的<strong>阻塞点是否都是一致</strong></li>
 </ul>
