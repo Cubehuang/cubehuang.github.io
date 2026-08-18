@@ -22,43 +22,43 @@
     <meta name="description" content="[TOC]回顾：从上篇文章中，我们主要从问题角度描述了我们system_server中watchdog的原理，粒度是很粗糙的。简单可以概括为下面三点：  关键服务对象锁不能被某线程异常长时间占用——问题1 系统关键线程不能长时间只执行一个单一逻辑，避免后面的消息阻塞——问题2 当监测到上面异常时，我们根据异常时间长短来决策是否重启手机，并且根据异常时间我们针对性的输出日志，让程序员根据log解决异">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Android system_server-watchdog机制介绍（下）">
-<meta property="og:url" content="http://example.com/2025/09/02/2_watchdog_%E4%B8%8B/">
+<meta property="og:url" content="https://cubehuang.github.io/2025/09/02/2_watchdog_%E4%B8%8B/">
 <meta property="og:site_name" content="Cubehuang_blog">
 <meta property="og:description" content="[TOC]回顾：从上篇文章中，我们主要从问题角度描述了我们system_server中watchdog的原理，粒度是很粗糙的。简单可以概括为下面三点：  关键服务对象锁不能被某线程异常长时间占用——问题1 系统关键线程不能长时间只执行一个单一逻辑，避免后面的消息阻塞——问题2 当监测到上面异常时，我们根据异常时间长短来决策是否重启手机，并且根据异常时间我们针对性的输出日志，让程序员根据log解决异">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/watchdog_1-%E7%AC%AC_6_%E9%A1%B5.png">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/%E7%BA%BF%E7%A8%8B%E8%AE%BF%E9%97%AE%E6%9D%82%E4%B9%B1.png">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/binder_montor.png">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/watchdog_1-%E7%AC%AC_5_%E9%A1%B5.png">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/%E7%BA%BF%E7%A8%8B%E6%9D%82%E4%B9%B1.png">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/%E9%87%8D%E8%A6%81%E7%BA%BF%E7%A8%8B%E9%98%BB%E5%A1%9E.png">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/dump_%E8%BF%9B%E7%A8%8B.jpg">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/kernel_D_log.jpg">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/watchdog_1-%E7%AC%AC10_%E9%A1%B5.png">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/watchdog_1-%E7%AC%AC11_%E9%A1%B5.png">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/log_red.PNG">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/wait_binder_target.jpg">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/system_server%E7%BA%BF%E7%A8%8B%E9%97%B4%E6%AD%BB%E9%94%81.png">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/system_server_to_phone_2.png">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/system_server_to_phone_1.png">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/audio00.png">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/audio0.png">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/audio1.png">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/same_backtrace.png">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/3_deadlock_1.png">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/3_deadlock_3.png">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/3_deadlock_2.png">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/%E6%A8%A1%E5%9D%97A_1.png">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/%E6%A8%A1%E5%9D%97A_2.png">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/%E6%A8%A1%E5%9D%97A_3.png">
-<meta property="og:image" content="http://example.com/blog_imgs/2_watchdog_2/%E6%A8%A1%E5%9D%97A_4.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/watchdog_1-%E7%AC%AC_6_%E9%A1%B5.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/%E7%BA%BF%E7%A8%8B%E8%AE%BF%E9%97%AE%E6%9D%82%E4%B9%B1.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/binder_montor.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/watchdog_1-%E7%AC%AC_5_%E9%A1%B5.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/%E7%BA%BF%E7%A8%8B%E6%9D%82%E4%B9%B1.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/%E9%87%8D%E8%A6%81%E7%BA%BF%E7%A8%8B%E9%98%BB%E5%A1%9E.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/dump_%E8%BF%9B%E7%A8%8B.jpg">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/kernel_D_log.jpg">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/watchdog_1-%E7%AC%AC10_%E9%A1%B5.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/watchdog_1-%E7%AC%AC11_%E9%A1%B5.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/log_red.PNG">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/wait_binder_target.jpg">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/system_server%E7%BA%BF%E7%A8%8B%E9%97%B4%E6%AD%BB%E9%94%81.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/system_server_to_phone_2.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/system_server_to_phone_1.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/audio00.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/audio0.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/audio1.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/same_backtrace.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/3_deadlock_1.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/3_deadlock_3.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/3_deadlock_2.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/%E6%A8%A1%E5%9D%97A_1.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/%E6%A8%A1%E5%9D%97A_2.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/%E6%A8%A1%E5%9D%97A_3.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/%E6%A8%A1%E5%9D%97A_4.png">
 <meta property="article:published_time" content="2025-09-02T12:46:25.000Z">
 <meta property="article:modified_time" content="2025-09-20T12:46:25.000Z">
 <meta property="article:author" content="CubeHuang">
 <meta property="article:tag" content="SWT">
 <meta property="article:tag" content="系统概念原理">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="http://example.com/blog_imgs/2_watchdog_2/watchdog_1-%E7%AC%AC_6_%E9%A1%B5.png">
+<meta name="twitter:image" content="https://cubehuang.github.io/blog_imgs/2_watchdog_2/watchdog_1-%E7%AC%AC_6_%E9%A1%B5.png">
   
   
   
@@ -100,7 +100,7 @@
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
     Fluid.ctx = Object.assign({}, Fluid.ctx)
-    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":["home","post","category","about","links","archive"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"left","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+    var CONFIG = {"hostname":"cubehuang.github.io","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":["home","post","category","about","links","archive"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"left","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
 
     if (CONFIG.web_analytics.follow_dnt) {
       var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;

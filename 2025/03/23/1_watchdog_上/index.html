@@ -22,24 +22,24 @@
     <meta name="description" content="[TOC] 1. system_server进程存在哪些问题？在整个Android系统中最为重要的一个进程就是system_server进程，对于应用程序来说system_server进程提供应用进程所需的一切，system_server进程的正常工作是整个手机系统正常运行的保障，这样用户才能够顺利使用手机。  问题一：在我们开发者的眼中，一个复杂功能的进程中往往包含了各个线程，并且将复杂功能拆分">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Android system_server-watchdog机制介绍（上）">
-<meta property="og:url" content="http://example.com/2025/03/23/1_watchdog_%E4%B8%8A/">
+<meta property="og:url" content="https://cubehuang.github.io/2025/03/23/1_watchdog_%E4%B8%8A/">
 <meta property="og:site_name" content="Cubehuang_blog">
 <meta property="og:description" content="[TOC] 1. system_server进程存在哪些问题？在整个Android系统中最为重要的一个进程就是system_server进程，对于应用程序来说system_server进程提供应用进程所需的一切，system_server进程的正常工作是整个手机系统正常运行的保障，这样用户才能够顺利使用手机。  问题一：在我们开发者的眼中，一个复杂功能的进程中往往包含了各个线程，并且将复杂功能拆分">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://example.com/blog_imgs/1_watchdog_1/Image.png">
-<meta property="og:image" content="http://example.com/blog_imgs/1_watchdog_1/Image_1.png">
-<meta property="og:image" content="http://example.com/blog_imgs/1_watchdog_1/Image_2.png">
-<meta property="og:image" content="http://example.com/blog_imgs/1_watchdog_1/Image_3.png">
-<meta property="og:image" content="http://example.com/blog_imgs/1_watchdog_1/Image_4.png">
-<meta property="og:image" content="http://example.com/blog_imgs/1_watchdog_1/Image_5.png">
-<meta property="og:image" content="http://example.com/blog_imgs/1_watchdog_1/Image_6.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/1_watchdog_1/Image.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/1_watchdog_1/Image_1.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/1_watchdog_1/Image_2.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/1_watchdog_1/Image_3.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/1_watchdog_1/Image_4.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/1_watchdog_1/Image_5.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/1_watchdog_1/Image_6.png">
 <meta property="article:published_time" content="2025-03-23T12:46:25.000Z">
 <meta property="article:modified_time" content="2025-11-23T12:46:25.000Z">
 <meta property="article:author" content="CubeHuang">
 <meta property="article:tag" content="SWT">
 <meta property="article:tag" content="系统概念原理">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="http://example.com/blog_imgs/1_watchdog_1/Image.png">
+<meta name="twitter:image" content="https://cubehuang.github.io/blog_imgs/1_watchdog_1/Image.png">
   
   
   
@@ -81,7 +81,7 @@
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
     Fluid.ctx = Object.assign({}, Fluid.ctx)
-    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":["home","post","category","about","links","archive"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"left","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+    var CONFIG = {"hostname":"cubehuang.github.io","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":["home","post","category","about","links","archive"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"left","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
 
     if (CONFIG.web_analytics.follow_dnt) {
       var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
