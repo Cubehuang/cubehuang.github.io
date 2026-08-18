@@ -1,0 +1,683 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/site_icon.png">
+  <link rel="icon" href="/main_wallpapers/site_icon_2.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#37AFE1">
+  <meta name="author" content="CubeHuang">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="1.ContentProvider 类型anranr名称：ContentProvider not responding目的：provider调用端进程对于 provider提供方的超时监测，避免提供方出现长时间阻塞，未能给provider调用方提供服务，出现长时间阻塞则会触发ANR机制，让provider提供方退出以恢复正常。超时时间：由调用方进程进程自主设定，调用方使用setDetectNotR">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ANR-ContentProvider not responding">
+<meta property="og:url" content="https://cubehuang.github.io/2026/07/10/6_ANR_Contentprovider_not_responding/">
+<meta property="og:site_name" content="Cubehuang_blog">
+<meta property="og:description" content="1.ContentProvider 类型anranr名称：ContentProvider not responding目的：provider调用端进程对于 provider提供方的超时监测，避免提供方出现长时间阻塞，未能给provider调用方提供服务，出现长时间阻塞则会触发ANR机制，让provider提供方退出以恢复正常。超时时间：由调用方进程进程自主设定，调用方使用setDetectNotR">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/6_ANR_ContentProvider_not_responding/1.PNG">
+<meta property="article:published_time" content="2026-07-10T09:18:10.000Z">
+<meta property="article:modified_time" content="2026-07-10T09:18:10.000Z">
+<meta property="article:author" content="CubeHuang">
+<meta property="article:tag" content="ANR">
+<meta property="article:tag" content="系统概念原理">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://cubehuang.github.io/blog_imgs/6_ANR_ContentProvider_not_responding/1.PNG">
+  
+  
+  
+  <title>ANR-ContentProvider not responding - Cubehuang_blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"cubehuang.github.io","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":["home","post","category","about","links","archive"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"left","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>CubeHuang</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/main_wallpapers/wp_1.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="ANR-ContentProvider not responding"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-07-10 17:18" pubdate>
+          2026年7月10日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          902 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          8 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="padding-left: 2rem; margin-right: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">ANR-ContentProvider not responding</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h2 id="1-ContentProvider-类型anr"><a href="#1-ContentProvider-类型anr" class="headerlink" title="1.ContentProvider 类型anr"></a>1.ContentProvider 类型anr</h2><p><strong>anr名称</strong>：ContentProvider not responding<br><strong>目的</strong>：<code>provider</code>调用端进程对于 provider提供方的超时监测，避免提供方出现长时间阻塞，未能给<code>provider</code>调用方提供服务，出现长时间阻塞则会触发ANR机制，让provider提供方退出以恢复正常。<br><strong>超时时间</strong>：由调用方进程进程自主设定，调用方使用<code>setDetectNotResponding(TIMEOUT)</code> 设定。<br><strong>关键log</strong>：出现ANR时候，调用方进程会打印<code>ContentProviderClient: Detected provider not responding: android.content.IContentProvider$Stub$Proxy@a1b2c3d</code>。<br><strong>特殊点</strong>: <code>setDetectNotResponding()</code> 只提供给<code>@RequiresPermission(REMOVE_TASKS)</code> 权限的应用，通常只有系统应用拥有该权限，所以该ANR 通常只会出现在系统provider组件进程中。</p>
+<h3 id="1-1-监测接口"><a href="#1-1-监测接口" class="headerlink" title="1.1 监测接口"></a>1.1 监测接口</h3><p>上述中提到调用方对于被调用方的监控，当调用方操作provider的相关接口时，调用方则会开始计时，接口规定时间内没有完成（<strong>provider提供方未返回</strong>）则有调用方向AMS上报 provider提供方出现ANR，kill 它。</p>
+<p><strong>监测接口</strong>：<br>当调用方进程使用这些接口时，主线程开启一个线程进行监控，超时则会触发anr。这些接口将会通过 <code>binder</code> 和 <strong>provider进程</strong> 交互</p>
+<figure class="highlight 1c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs 1c">* ContentProvider<span class="hljs-meta">#query </span><br>* ContentProvider<span class="hljs-meta">#getType  </span><br>* ContentProvider<span class="hljs-meta">#getStreamTypes  </span><br>* ContentProvider<span class="hljs-meta">#canonicalize </span><br>* ContentProvider<span class="hljs-meta">#uncanonicalize </span><br>* ContentProvider<span class="hljs-meta">#refresh</span><br>* ContentProvider<span class="hljs-meta">#insert  </span><br>* ContentProvider<span class="hljs-meta">#bulkInsert </span><br>* ContentProvider<span class="hljs-meta">#delete  </span><br>* ContentProvider<span class="hljs-meta">#update </span><br>* ContentProvider<span class="hljs-meta">#openFile  </span><br>* ContentProvider<span class="hljs-meta">#openAssetFile </span><br>* ContentProvider<span class="hljs-meta">#openTypedAssetFile </span><br>* ContentProvider<span class="hljs-meta">#applyBatch </span><br>* ContentProvider<span class="hljs-meta">#call</span><br></code></pre></td></tr></table></figure>
+<h3 id="1-2-排查点"><a href="#1-2-排查点" class="headerlink" title="1.2 排查点"></a>1.2 排查点</h3><p>这些接口是通过binder 和provider进程交互，如果<strong>provider提供方进程</strong>出现阻塞，那么堆栈肯定也会落在上面这些监测接口中。出现anr后，我们得知的是<strong>provider提供方进程</strong>进程的anr，以及该进程的堆栈信息。<br><strong>注意</strong>：<u>直接去排查该进程的主线程堆栈那么肯定是不对的，我们需要找到哪个binder线程出现了阻塞，因为接口的逻辑并不一定是落在主线程执行</u>。<br>我觉得可以先找到调用方进程信息，以此信息得到binder对端阻塞的信息，这样往后排查会好一些。</p>
+<ul>
+<li>通过<code>ContentProviderClient</code>tag 在main log 中排查就能找到调用端进程</li>
+<li>通过 binder 对端查找步骤，能查找导对端进程的哪个线程阻塞</li>
+</ul>
+<p>举例：</p>
+<ul>
+<li><strong>mainlog</strong></li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-comment">//from:main log--调用端进程 6699 ：com.google.android.documentsui</span><br><span class="hljs-number">06</span><span class="hljs-number">-10</span> <span class="hljs-number">21</span>:<span class="hljs-number">30</span>:<span class="hljs-number">47.781</span>  <span class="hljs-number">6699</span>  <span class="hljs-number">6699</span> W ContentProviderClient: Detected provider <span class="hljs-keyword">not</span> responding: android.content.ContentProviderProxy@f583fab<br></code></pre></td></tr></table></figure>
+<ul>
+<li><strong>堆栈文件</strong></li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-comment">//from anr_xxx--elapsed 20860ms 阻塞端线程：11756</span><br>    incoming transaction <span class="hljs-number">7725072</span>: <span class="hljs-number">0000000000000000</span> from <span class="hljs-number">6699</span>:<span class="hljs-number">7975</span> to <span class="hljs-number">11707</span>:<span class="hljs-number">11756</span> code <span class="hljs-number">1</span> flags <span class="hljs-number">12</span> pri <span class="hljs-number">0</span>:<span class="hljs-number">112</span> r1 elapsed <span class="hljs-number">20860</span>ms node <span class="hljs-number">7724929</span> size <span class="hljs-number">332</span>:<span class="hljs-number">16</span> offset <span class="hljs-number">0</span><br><br>----- pid <span class="hljs-number">11707</span> at <span class="hljs-number">2026</span><span class="hljs-number">-06</span><span class="hljs-number">-10</span> <span class="hljs-number">21</span>:<span class="hljs-number">30</span>:<span class="hljs-number">50.695167656</span><span class="hljs-number">+0</span>800 -----<br>Cmd line: com.google.android.apps.docs<br>...<br><span class="hljs-string">&quot;binder:11707_3&quot;</span> prio=<span class="hljs-number">5</span> tid=<span class="hljs-number">12</span> Waiting<br>  | group=<span class="hljs-string">&quot;main&quot;</span> sCount=<span class="hljs-number">1</span> ucsCount=<span class="hljs-number">0</span> flags=<span class="hljs-number">1</span> obj=<span class="hljs-number">0x200f7a8</span> self=<span class="hljs-number">0xb400006fff2471b0</span><br>  | sysTid=<span class="hljs-number">11756</span> nice=<span class="hljs-number">-8</span> cgrp=background-l sched=<span class="hljs-number">0</span>/<span class="hljs-number">0</span> handle=<span class="hljs-number">0x6ee6a90500</span><br>  | state=S schedstat=( <span class="hljs-number">41011694</span> <span class="hljs-number">53262998</span> <span class="hljs-number">15</span> ) utm=<span class="hljs-number">3</span> stm=<span class="hljs-number">1</span> core=<span class="hljs-number">6</span> HZ=<span class="hljs-number">100</span><br>  | stack=<span class="hljs-number">0x6ee6999000</span><span class="hljs-number">-0x6ee699b000</span> stackSize=<span class="hljs-number">989</span>KB<br>  | held mutexes=<br>  at jdk.internal.misc.Unsafe.<span class="hljs-built_in">park</span>(Native method)<br>  - waiting on an unknown object<br>  at java.util.concurrent.locks.LockSupport.<span class="hljs-built_in">park</span>(LockSupport.java:<span class="hljs-number">221</span>)<br>  at xnj.<span class="hljs-built_in">m</span>(PG:<span class="hljs-number">51</span>)<br>  at jvu.<span class="hljs-built_in">f</span>(PG:<span class="hljs-number">21</span>)<br>  - locked &lt;<span class="hljs-number">0x06dd1688</span>&gt; (a com.google.android.apps.docs.common.storagebackend.StorageBackendContentProvider)<br>  at jvu.<span class="hljs-built_in">b</span>(PG:<span class="hljs-number">10</span>)<br>  - locked &lt;<span class="hljs-number">0x06dd1688</span>&gt; (a com.google.android.apps.docs.common.storagebackend.StorageBackendContentProvider)<br>  at jvu.<span class="hljs-built_in">queryRoots</span>(PG:<span class="hljs-number">9</span>)<br>  at android.provider.DocumentsProvider.<span class="hljs-built_in">query</span>(DocumentsProvider.java:<span class="hljs-number">915</span>)<br>  at android.content.ContentProvider$Transport.<span class="hljs-built_in">query</span>(ContentProvider.java:<span class="hljs-number">299</span>)<br>  at android.content.ContentProviderNative.<span class="hljs-built_in">onTransact</span>(ContentProviderNative.java:<span class="hljs-number">107</span>)<br>  at android.os.Binder.<span class="hljs-built_in">execTransactInternal</span>(Binder.java:<span class="hljs-number">1446</span>)<br>  at android.os.Binder.<span class="hljs-built_in">execTransact</span>(Binder.java:<span class="hljs-number">1381</span>)<br>DumpLatencyMs: <span class="hljs-number">812.462</span><br>...<br></code></pre></td></tr></table></figure>
+<h2 id="2-检测时序图"><a href="#2-检测时序图" class="headerlink" title="2.检测时序图"></a>2.检测时序图</h2><p><img src="/blog_imgs/6_ANR_ContentProvider_not_responding/1.PNG" srcset="/img/loading.gif" lazyload alt="ContentProvider not responding 时序图"></p>
+<h3 id="2-1-时序图解释"><a href="#2-1-时序图解释" class="headerlink" title="2.1 时序图解释"></a>2.1 时序图解释</h3><ul>
+<li>时序图较为简单，调用方进程，当进行provider 访问时候，会设置一个runnable在主线程执行，如果访问超时，的runnable执行通知AMS触发Provider进程的anr</li>
+<li>provider进程阻塞后将会出现anr，进程会退出。</li>
+</ul>
+<h2 id="Google-合入记录"><a href="#Google-合入记录" class="headerlink" title="Google 合入记录"></a>Google 合入记录</h2><table>
+<thead>
+<tr>
+<th>时间</th>
+<th>Commit</th>
+<th>作者</th>
+<th>说明</th>
+<th>Bug</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>2013-09-30</td>
+<td><code>7aa7601c09ab</code></td>
+<td>Jeff Sharkey</td>
+<td><strong>Detect wedged ContentProviders, treat as ANR.</strong> 在 <code>ContentProviderClient</code> 增加 hidden 超时支持，默认关闭；DocumentsUI 接入 20s 超时</td>
+<td>10993301, 10819461, 10852518</td>
+</tr>
+<tr>
+<td>—</td>
+<td><code>4ba69239750c</code></td>
+<td>—</td>
+<td><strong>Offer API to detect ContentProvider ANRs.</strong>（<code>ContentProviderClient.java</code> 历史提交）</td>
+<td>—</td>
+</tr>
+<tr>
+<td>2017-11-09</td>
+<td><code>5918948db7c5</code></td>
+<td>Jeff Sharkey</td>
+<td><strong>Allow blocking calls when protected against ANRs.</strong> 开启 <code>setDetectNotResponding</code> 时允许 <code>Binder.allowBlocking()</code></td>
+<td>69128093</td>
+</tr>
+<tr>
+<td>2022-07-21</td>
+<td><code>e4cfe35ee9c5</code></td>
+<td>Ben Miles</td>
+<td><strong>Add TimeoutRecord.</strong> 引入结构化超时记录，含 <code>TimeoutKind.CONTENT_PROVIDER</code></td>
+<td>b&#x2F;239390223</td>
+</tr>
+</tbody></table>
+<h2 id="3-总结："><a href="#3-总结：" class="headerlink" title="3. 总结："></a>3. 总结：</h2><ul>
+<li>本文对于该 <code>ContentProvider not responding</code> anr的原理进行阐述</li>
+<li>对于该类问题的排查方法进行说明。</li>
+</ul>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E6%9C%BA%E5%88%B6/" class="category-chain-item">机制</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/%E6%9C%BA%E5%88%B6/ANR/" class="category-chain-item">ANR</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/%E6%9C%BA%E5%88%B6/ANR/ContentProvider/" class="category-chain-item">ContentProvider</a>
+  
+  
+
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E7%B3%BB%E7%BB%9F%E6%A6%82%E5%BF%B5%E5%8E%9F%E7%90%86/" class="print-no-link">#系统概念原理</a>
+      
+        <a href="/tags/ANR/" class="print-no-link">#ANR</a>
+      
+    </div>
+  
+</div>
+
+
+              
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/04/24/9_Profiler%E5%B7%A5%E5%85%B7%E5%88%86%E6%9E%90Android16%E8%87%AA%E5%8A%A8%E5%A1%AB%E5%85%85%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93/" title="Android16 自动填充泄露问题总结">
+                        <span class="hidden-mobile">Android16 自动填充泄露问题总结</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

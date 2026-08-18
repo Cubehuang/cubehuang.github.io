@@ -1,0 +1,477 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Bouml (http://bouml.free.fr/) -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="2232" height="1023" version="1.1" xmlns="http://www.w3.org/2000/svg">
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="279" y1="59" x2="279" y2="1023" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="1255" y1="56" x2="1255" y2="1023" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="1333" y1="57" x2="1333" y2="1023" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="1143" y1="57" x2="1143" y2="1023" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="816" y1="54" x2="816" y2="1023" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="1977" y1="56" x2="1977" y2="1023" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="663" y1="54" x2="663" y2="1023" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="1523" y1="57" x2="1523" y2="1023" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="1832" y1="53" x2="1832" y2="1023" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="1022" y1="56" x2="1022" y2="1023" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="1666" y1="56" x2="1666" y2="1023" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="455" y1="55" x2="455" y2="1023" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="109" y1="59" x2="109" y2="1023" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="925" y1="56" x2="925" y2="1023" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="1417" y1="57" x2="1417" y2="1023" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="2139" y1="57" x2="2139" y2="1023" />
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1462" y="12" width="3" height="26" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1371" y="35" width="94" height="3" />
+	<rect fill="#90e990" stroke="black" stroke-width="1" stroke-opacity="1" x="1367" y="8" width="95" height="27" />
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="1415" y="29">:BufferQueue</text>
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="547" y="10" width="3" height="26" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="362" y="33" width="188" height="3" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="358" y="6" width="189" height="27" />
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="453" y="27">:BpSurfaceComposerClient</text>
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="756" y="9" width="3" height="26" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="571" y="32" width="188" height="3" />
+	<rect fill="#90e990" stroke="black" stroke-width="1" stroke-opacity="1" x="567" y="5" width="189" height="27" />
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="662" y="26">:BnSurfaceComposerClient</text>
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="193" y="14" width="3" height="26" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="26" y="37" width="170" height="3" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="22" y="10" width="171" height="27" />
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="108" y="31">:SurfaceComposerClient</text>
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="332" y="14" width="3" height="26" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="226" y="37" width="109" height="3" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="222" y="10" width="110" height="27" />
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="277" y="31">:SurfaceControl</text>
+</g>
+<g>
+	<polygon fill="#c0ffff" stroke="black" stroke-opacity="1" points="1485,324 1760,324 1760,335 1771,335 1771,390 1485,390 1485,324" />
+	<line stroke="black" stroke-opacity="1" x1="1760" y1="324" x2="1771" y2="335" />
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="1496" y="351">1.Create BufferQueueCore</text>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="1496" y="367">2.Create Producer</text>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="1496" y="383">3.Create Consumer</text>
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1585" y="12" width="3" height="26" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1462" y="35" width="126" height="3" />
+	<rect fill="#90e990" stroke="black" stroke-width="1" stroke-opacity="1" x="1458" y="8" width="127" height="27" />
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="1522" y="29">:BufferQueueCore</text>
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="103" y="78" width="12" height="930" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="448" y="124" width="12" height="36" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="273" y="942" width="12" height="69" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="657" y="134" width="12" height="34" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="918" y="146" width="12" height="62" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="810" y="188" width="12" height="715" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="1016" y="260" width="12" height="461" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="1136" y="291" width="12" height="423" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="1660" y="458" width="12" height="29" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="1826" y="507" width="12" height="36" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="1970" y="571" width="12" height="60" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="2133" y="652" width="12" height="42" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="1249" y="287" width="12" height="86" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="1136" y="735" width="12" height="29" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="1136" y="845" width="12" height="29" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="1411" y="407" width="12" height="122" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="1326" y="777" width="12" height="56" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="1327" y="295" width="12" height="54" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="1517" y="414" width="12" height="31" />
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="950" y="11" width="3" height="26" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="899" y="34" width="54" height="3" />
+	<rect fill="#90e990" stroke="black" stroke-width="1" stroke-opacity="1" x="895" y="7" width="55" height="27" />
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="923" y="28">:Client</text>
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1741" y="11" width="3" height="26" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1591" y="34" width="153" height="3" />
+	<rect fill="#90e990" stroke="black" stroke-width="1" stroke-opacity="1" x="1587" y="7" width="154" height="27" />
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="1664" y="28">:BufferQueueProducer</text>
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="670" y1="158" x2="918" y2="158" />
+	<polygon fill="#000000" stroke="none" points="918,158 914,154 914,162" />
+</g>
+<ellipse fill="black" stroke="none" cx="15.5" cy="91.5" rx="4.5" ry="4.5" />
+<g>
+	<line stroke="black" stroke-opacity="1" x1="20" y1="90" x2="103" y2="90" />
+	<polygon fill="#000000" stroke="none" points="103,90 99,86 99,94" />
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1912" y="9" width="3" height="26" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1751" y="32" width="164" height="3" />
+	<rect fill="#90e990" stroke="black" stroke-width="1" stroke-opacity="1" x="1747" y="5" width="165" height="27" />
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="1830" y="26">:BufferQueueConsumer</text>
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="868" y="9" width="3" height="26" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="764" y="32" width="107" height="3" />
+	<rect fill="#90e990" stroke="black" stroke-width="1" stroke-opacity="1" x="760" y="5" width="108" height="27" />
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="814" y="26">:SurfaceFlinger</text>
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1072" y="11" width="3" height="26" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="970" y="34" width="105" height="3" />
+	<rect fill="#90e990" stroke="black" stroke-width="1" stroke-opacity="1" x="966" y="7" width="106" height="27" />
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="1019" y="28">:DefaultFactory</text>
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="823" y1="859" x2="1136" y2="859" />
+	<polygon fill="#000000" stroke="none" points="1136,859 1132,855 1132,863" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="1424" y1="474" x2="1660" y2="474" />
+	<polygon fill="#000000" stroke="none" points="1660,474 1656,470 1656,478" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="823" y1="749" x2="1136" y2="749" />
+	<polygon fill="#000000" stroke="none" points="1136,749 1132,745 1132,753" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" stroke-dasharray="4,4" x1="1262" y1="319" x2="1327" y2="319" />
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 1266 315 L 1262 319 L 1266 323" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="1029" y1="303" x2="1136" y2="303" />
+	<polygon fill="#000000" stroke="none" points="1136,303 1132,299 1132,307" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="1424" y1="425" x2="1517" y2="425" />
+	<polygon fill="#000000" stroke="none" points="1517,425 1513,421 1513,429" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="1424" y1="518" x2="1826" y2="518" />
+	<polygon fill="#000000" stroke="none" points="1826,518 1822,514 1822,522" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="110" y="101" width="12" height="902" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="817" y="227" width="12" height="62" />
+</g>
+<g>
+	<rect fill="#ffc0c0" stroke="black" stroke-width="1" stroke-opacity="1" x="817" y="376" width="12" height="36" />
+</g>
+<g>
+	<rect fill="#ffc0c0" stroke="black" stroke-width="1" stroke-opacity="1" x="817" y="537" width="12" height="57" />
+</g>
+<g>
+	<rect fill="#ffc0c0" stroke="black" stroke-width="1" stroke-opacity="1" x="817" y="616" width="12" height="75" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="1023" y="389" width="12" height="42" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="1023" y="559" width="12" height="37" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="1023" y="641" width="12" height="54" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="1143" y="374" width="12" height="332" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="1334" y="316" width="12" height="29" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="1333" y="799" width="12" height="29" />
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="2043" y="11" width="3" height="26" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1910" y="34" width="136" height="3" />
+	<rect fill="#90e990" stroke="black" stroke-width="1" stroke-opacity="1" x="1906" y="7" width="137" height="27" />
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="1975" y="28">:MonitoredProducer</text>
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1206" y="12" width="3" height="26" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1079" y="35" width="130" height="3" />
+	<rect fill="#90e990" stroke="black" stroke-width="1" stroke-opacity="1" x="1075" y="8" width="131" height="27" />
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="1141" y="29">:BufferQueueLayer</text>
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="823" y1="198" x2="918" y2="198" />
+	<polygon fill="#000000" stroke="none" points="823,198 827,194 827,202" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" stroke-dasharray="4,4" x1="1149" y1="346" x2="1249" y2="346" />
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 1153 342 L 1149 346 L 1153 350" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="1149" y1="318" x2="1249" y2="318" />
+	<polygon fill="#000000" stroke="none" points="1249,318 1245,314 1245,322" />
+</g>
+<g>
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 124 102 L 141 102 L 141 109 L 124 109" />
+	<polygon fill="#000000" stroke="none" points="124,109 128,113 128,105" />
+</g>
+<g>
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 1347 800 L 1364 800 L 1364 807 L 1347 807" />
+	<polygon fill="#000000" stroke="none" points="1347,807 1351,811 1351,803" />
+</g>
+<g>
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 831 228 L 848 228 L 848 235 L 831 235" />
+	<polygon fill="#000000" stroke="none" points="831,235 835,239 835,231" />
+</g>
+<g>
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 1157 375 L 1174 375 L 1174 382 L 1157 382" />
+	<polygon fill="#000000" stroke="none" points="1157,382 1161,386 1161,378" />
+</g>
+<g>
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 1348 317 L 1365 317 L 1365 324 L 1348 324" />
+	<polygon fill="#000000" stroke="none" points="1348,324 1352,328 1352,320" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="123" y1="976" x2="273" y2="976" />
+	<polygon fill="#000000" stroke="none" points="273,976 269,972 269,980" />
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="2216" y="12" width="3" height="26" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="2063" y="35" width="156" height="3" />
+	<rect fill="#90e990" stroke="black" stroke-width="1" stroke-opacity="1" x="2059" y="8" width="157" height="27" />
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="2138" y="29">:BufferLayerConsumer</text>
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1297" y="11" width="3" height="26" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1214" y="34" width="86" height="3" />
+	<rect fill="#90e990" stroke="black" stroke-width="1" stroke-opacity="1" x="1210" y="7" width="87" height="27" />
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="1254" y="28">:BufferLayer</text>
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="830" y1="547" x2="1143" y2="547" />
+	<polygon fill="#000000" stroke="none" points="830,547 834,543 834,551" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="830" y1="627" x2="1143" y2="627" />
+	<polygon fill="#000000" stroke="none" points="830,627 834,623 834,631" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="1036" y1="420" x2="1411" y2="420" />
+	<polygon fill="#000000" stroke="none" points="1411,420 1407,416 1407,424" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" stroke-dasharray="4,4" x1="123" y1="893" x2="810" y2="893" />
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 127 889 L 123 893 L 127 897" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="1262" y1="306" x2="1327" y2="306" />
+	<polygon fill="#000000" stroke="none" points="1327,306 1323,302 1323,310" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="830" y1="388" x2="1143" y2="388" />
+	<polygon fill="#000000" stroke="none" points="830,388 834,384 834,392" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="1036" y1="664" x2="2133" y2="664" />
+	<polygon fill="#000000" stroke="none" points="2133,664 2129,660 2129,668" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="123" y1="138" x2="448" y2="138" />
+	<polygon fill="#000000" stroke="none" points="448,138 444,134 444,142" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="1150" y="672" width="12" height="29" />
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1358" y="12" width="3" height="26" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1307" y="35" width="54" height="3" />
+	<rect fill="#90e990" stroke="black" stroke-width="1" stroke-opacity="1" x="1303" y="8" width="55" height="27" />
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="1331" y="29">:Layer</text>
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="830" y1="651" x2="1023" y2="651" />
+	<polygon fill="#000000" stroke="none" points="1023,651 1019,647 1019,655" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="830" y1="402" x2="1023" y2="402" />
+	<polygon fill="#000000" stroke="none" points="1023,402 1019,398 1019,406" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="830" y1="270" x2="1016" y2="270" />
+	<polygon fill="#000000" stroke="none" points="1016,270 1012,266 1012,274" />
+</g>
+<g>
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 1164 673 L 1181 673 L 1181 680 L 1164 680" />
+	<polygon fill="#000000" stroke="none" points="1164,680 1168,684 1168,676" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="461" y1="145" x2="657" y2="145" />
+	<polygon fill="#000000" stroke="none" points="657,145 653,141 653,149" />
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="1358" y="798">H1:new Handle(mFlinger, this)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="425" y="886">Some Values</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="1429" y="512">M3:sp&lt;IGraphicBufferConsumer&gt; consumer(new BufferQueueConsumer(core))</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="1433" y="463">M2:sp&lt;IGraphicBufferProducer&gt; producer(new BufferQueueProducer(core, consumerIsSurfaceFlinger))</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="833" y="742">E2:layer-&gt;setDefaultBufferProperties(w, h, format)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="881" y="851">E4:*gbp = layer-&gt;getProducer()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="939" y="788">E3:*handle = layer-&gt;getHandle()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="1432" y="414">M1:sp&lt;BufferQueueCore&gt; core(new BufferQueueCore())</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="1342" y="572">N1:new MonitoredProducer(producer, flinger, layer)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="1342" y="660">O1:new BufferLayerConsumer()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="1167" y="689">K4: mContentsChangedListener = new ContentsChangedListener(this)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="839" y="381">K1:mFlinger-&gt;getFactory().createBufferQueue</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="837" y="541">K2:mProducer = mFlinger-&gt;getFactory().createMonitoredProducer()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="833" y="622">K3:mConsumer =mFlinger-&gt;getFactory().createBufferLayerConsumer()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="1153" y="414">L1:createBufferQueue()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="212" y="130">B1:mClient-&gt;createSurface()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="-65" y="82">surfaceControl = client-&gt;createSurface()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="489" y="136">Binder:onTransact()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="1025" y="291">G1:new BufferQueueLayer()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="1146" y="314">H1:BufferLayer(...)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="1258" y="293">I1:Layer(...)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="212" y="969">B2:*outSurface = new SurfaceControl()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="674" y="151">C1:createSurface()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="127" y="97">A1:createSurfaceChecked()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="1337" y="312">J1:onFirstRef()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="845" y="262">F1:getFactory().createBufferQueueLayer()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="831" y="222">E1:result = createBufferQueueLayer()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="1144" y="372">H2:onFirstRef()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="13" fill="#000000" xml:space="preserve" x="794" y="183">D1:mFlinger-&gt;createLayer()</text>
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" stroke-dasharray="4,4" x1="1029" y1="702" x2="1136" y2="702" />
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 1033 698 L 1029 702 L 1033 706" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="1036" y1="583" x2="1970" y2="583" />
+	<polygon fill="#000000" stroke="none" points="1970,583 1966,579 1966,587" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="830" y1="569" x2="1023" y2="569" />
+	<polygon fill="#000000" stroke="none" points="1023,569 1019,565 1019,573" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="823" y1="796" x2="1326" y2="796" />
+	<polygon fill="#000000" stroke="none" points="1326,796 1322,792 1322,800" />
+</g>
+</svg>
