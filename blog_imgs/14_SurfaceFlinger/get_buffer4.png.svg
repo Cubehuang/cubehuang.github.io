@@ -1,0 +1,508 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Bouml (http://bouml.free.fr/) -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="1880" height="947" version="1.1" xmlns="http://www.w3.org/2000/svg">
+<g>
+	<polygon fill="#c0ffff" stroke="black" stroke-opacity="1" points="759,756 957,756 957,766 967,766 967,864 759,864 759,756" />
+	<line stroke="black" stroke-opacity="1" x1="957" y1="756" x2="967" y2="766" />
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="769" y="781">this will call gralloc module, to</text>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="769" y="796">map buffer:</text>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="769" y="811">mSlots[slot].mRequestBufferCalle</text>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="769" y="826">d = true;</text>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="769" y="841">    *buf =</text>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="769" y="856">mSlots[slot].mGraphicBuffer;</text>
+</g>
+<g>
+	<polygon fill="#c0ffff" stroke="black" stroke-opacity="1" points="762,240 912,240 912,250 922,250 922,316 762,316 762,240" />
+	<line stroke="black" stroke-opacity="1" x1="912" y1="240" x2="922" y2="250" />
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="772" y="265">if (returnFlags &amp;</text>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="772" y="280">BUFFER_NEEDS_REAL</text>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="772" y="295">LOCATION) {}</text>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="772" y="310">Finished Alloc Buffer!</text>
+</g>
+<g>
+	<polygon fill="#c0ffff" stroke="black" stroke-opacity="1" points="1012,659 1262,659 1262,669 1272,669 1272,693 1012,693 1012,659" />
+	<line stroke="black" stroke-opacity="1" x1="1262" y1="659" x2="1272" y2="669" />
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="1022" y="684">this will call gralloc module to alloc buffer</text>
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="739" y1="45" x2="739" y2="947" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="984" y1="45" x2="984" y2="947" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="1245" y1="45" x2="1245" y2="947" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="861" y1="45" x2="861" y2="947" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="431" y1="45" x2="431" y2="947" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="1128" y1="45" x2="1128" y2="947" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="593" y1="45" x2="593" y2="947" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="1358" y1="45" x2="1358" y2="947" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="1488" y1="45" x2="1488" y2="947" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="1605" y1="45" x2="1605" y2="947" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="286" y1="45" x2="286" y2="947" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="171" y1="45" x2="171" y2="947" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="86" y1="45" x2="86" y2="947" />
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="195" y="8" width="3" height="21" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="147" y="26" width="51" height="3" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="143" y="4" width="52" height="22" />
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="169" y="21">:Surface</text>
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="166" y="153" width="10" height="782" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="281" y="189" width="10" height="24" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="81" y="61" width="10" height="30" />
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="130" y="8" width="3" height="21" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="42" y="26" width="91" height="3" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="38" y="4" width="92" height="22" />
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="84" y="21">:SurfaceControl</text>
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="1600" y="759" width="10" height="96" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="856" y="891" width="10" height="24" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="426" y="235" width="10" height="28" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="734" y="255" width="10" height="28" />
+</g>
+<g>
+	<rect fill="#ff0000" stroke="black" stroke-width="1" stroke-opacity="1" x="588" y="310" width="10" height="26" />
+</g>
+<g>
+	<rect fill="#ff0000" stroke="black" stroke-width="1" stroke-opacity="1" x="426" y="298" width="10" height="26" />
+</g>
+<g>
+	<rect fill="#ff0000" stroke="black" stroke-width="1" stroke-opacity="1" x="979" y="388" width="10" height="183" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="588" y="245" width="10" height="28" />
+</g>
+<g>
+	<rect fill="#ff0000" stroke="black" stroke-width="1" stroke-opacity="1" x="1123" y="441" width="10" height="69" />
+</g>
+<g>
+	<rect fill="#ff0000" stroke="black" stroke-width="1" stroke-opacity="1" x="856" y="336" width="10" height="295" />
+</g>
+<g>
+	<rect fill="#ff0000" stroke="black" stroke-width="1" stroke-opacity="1" x="734" y="321" width="10" height="35" />
+</g>
+<g>
+	<rect fill="#ff0000" stroke="black" stroke-width="1" stroke-opacity="1" x="979" y="602" width="10" height="78" />
+</g>
+<g>
+	<rect fill="#ff0000" stroke="black" stroke-width="1" stroke-opacity="1" x="1240" y="488" width="10" height="26" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="734" y="761" width="10" height="40" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="1483" y="661" width="10" height="129" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="1353" y="647" width="10" height="28" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="426" y="727" width="10" height="200" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="588" y="750" width="10" height="28" />
+</g>
+<ellipse fill="black" stroke="none" cx="16.5" cy="69.5" rx="4.5" ry="4.5" />
+<ellipse fill="black" stroke="none" cx="9.5" cy="161.5" rx="4.5" ry="4.5" />
+<g>
+	<line stroke="black" stroke-opacity="1" x1="599" y1="769" x2="734" y2="769" />
+	<polygon fill="#000000" stroke="none" points="734,769 730,765 730,773" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="599" y1="328" x2="734" y2="328" />
+	<polygon fill="#000000" stroke="none" points="734,328 730,324 730,332" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="599" y1="263" x2="734" y2="263" />
+	<polygon fill="#000000" stroke="none" points="734,263 730,259 730,267" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" stroke-dasharray="4,4" x1="437" y1="796" x2="734" y2="796" />
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 441 792 L 437 796 L 441 800" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" stroke-dasharray="4,4" x1="177" y1="922" x2="426" y2="922" />
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 181 918 L 177 922 L 181 926" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="1364" y1="669" x2="1483" y2="669" />
+	<polygon fill="#000000" stroke="none" points="1483,669 1479,665 1479,673" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="437" y1="897" x2="856" y2="897" />
+	<polygon fill="#000000" stroke="none" points="856,897 852,893 852,901" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="437" y1="317" x2="588" y2="317" />
+	<polygon fill="#000000" stroke="none" points="588,317 584,313 584,321" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="745" y1="349" x2="856" y2="349" />
+	<polygon fill="#000000" stroke="none" points="856,349 852,345 852,353" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="437" y1="760" x2="588" y2="760" />
+	<polygon fill="#000000" stroke="none" points="588,760 584,756 584,764" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="21" y1="68" x2="81" y2="68" />
+	<polygon fill="#000000" stroke="none" points="81,68 77,64 77,72" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="437" y1="253" x2="588" y2="253" />
+	<polygon fill="#000000" stroke="none" points="588,253 584,249 584,257" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="14" y1="160" x2="166" y2="160" />
+	<polygon fill="#000000" stroke="none" points="166,160 162,156 162,164" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="172" y="176" width="10" height="82" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="1606" y="777" width="10" height="72" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="172" y="269" width="10" height="470" />
+</g>
+<g>
+	<rect fill="#ff0000" stroke="black" stroke-width="1" stroke-opacity="1" x="985" y="623" width="10" height="49" />
+</g>
+<g>
+	<rect fill="#ff0000" stroke="black" stroke-width="1" stroke-opacity="1" x="1129" y="462" width="10" height="42" />
+</g>
+<g>
+	<rect fill="#ff0000" stroke="black" stroke-width="1" stroke-opacity="1" x="985" y="398" width="10" height="165" />
+</g>
+<g>
+	<rect fill="#ff0000" stroke="black" stroke-width="1" stroke-opacity="1" x="862" y="368" width="10" height="255" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="1489" y="678" width="10" height="106" />
+</g>
+<g>
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 997 624 L 1014 624 L 1014 631 L 997 631" />
+	<polygon fill="#000000" stroke="none" points="997,631 1001,635 1001,627" />
+</g>
+<g>
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 184 270 L 201 270 L 201 277 L 184 277" />
+	<polygon fill="#000000" stroke="none" points="184,277 188,281 188,273" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="183" y1="734" x2="426" y2="734" />
+	<polygon fill="#000000" stroke="none" points="426,734 422,730 422,738" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="1500" y1="766" x2="1600" y2="766" />
+	<polygon fill="#000000" stroke="none" points="1600,766 1596,762 1596,770" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="183" y1="306" x2="426" y2="306" />
+	<polygon fill="#000000" stroke="none" points="426,306 422,302 422,310" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="873" y1="615" x2="979" y2="615" />
+	<polygon fill="#000000" stroke="none" points="979,615 975,611 975,619" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="996" y1="655" x2="1353" y2="655" />
+	<polygon fill="#000000" stroke="none" points="1353,655 1349,651 1349,659" />
+</g>
+<g>
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 1501 679 L 1518 679 L 1518 686 L 1501 686" />
+	<polygon fill="#000000" stroke="none" points="1501,686 1505,690 1505,682" />
+</g>
+<g>
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 1618 778 L 1635 778 L 1635 785 L 1618 785" />
+	<polygon fill="#000000" stroke="none" points="1618,785 1622,789 1622,781" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="178" y="218" width="10" height="32" />
+</g>
+<g>
+	<rect fill="#00aa00" stroke="black" stroke-width="1" stroke-opacity="1" x="1612" y="813" width="10" height="30" />
+</g>
+<g>
+	<rect fill="#ff0000" stroke="black" stroke-width="1" stroke-opacity="1" x="991" y="423" width="10" height="40" />
+</g>
+<g>
+	<rect fill="#00aa00" stroke="black" stroke-width="1" stroke-opacity="1" x="1495" y="702" width="10" height="24" />
+</g>
+<g>
+	<rect fill="#ff0000" stroke="black" stroke-width="1" stroke-opacity="1" x="991" y="534" width="10" height="24" />
+</g>
+<g>
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 1003 424 L 1020 424 L 1020 431 L 1003 431" />
+	<polygon fill="#000000" stroke="none" points="1003,431 1007,435 1007,427" />
+</g>
+<g>
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 1003 535 L 1020 535 L 1020 542 L 1003 542" />
+	<polygon fill="#000000" stroke="none" points="1003,542 1007,546 1007,538" />
+</g>
+<g>
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 1624 814 L 1641 814 L 1641 821 L 1624 821" />
+	<polygon fill="#000000" stroke="none" points="1624,821 1628,825 1628,817" />
+</g>
+<g>
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 1507 703 L 1524 703 L 1524 710 L 1507 710" />
+	<polygon fill="#000000" stroke="none" points="1507,710 1511,714 1511,706" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="1002" y1="455" x2="1123" y2="455" />
+	<polygon fill="#000000" stroke="none" points="1123,455 1119,451 1119,459" />
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="752" y="332">I1:graphicBuffer = new GraphicBuffer(...)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="20" y="150">A2:surface-&gt;lock(&amp;outBuffer, NULL)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="27" y="57">A1:sp&lt;Surface&gt; surface = surfaceControl-&gt;getSurface()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="214" y="187">C1:listener = new StubProducerListener()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="204" y="236">E1:mGraphicBufferProducer-&gt;connect(..)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="453" y="309">BINDER:onTransact()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="609" y="320">H1:dequeueBuffer(...)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="877" y="365">J1:mInitCheck = initWithSize(..)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="186" y="214">D1:connect(,)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="453" y="245">BINDER:onTransact()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="629" y="255">F1:connect(...)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="182" y="268">B2;err = dequeueBuffer(,)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="174" y="298">G1:mGraphicBufferProducer-&gt;dequeueBuffer(..)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="183" y="172">B1:err = Surface::connect(NATIVE_WINDOW_API_CPU)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="1513" y="699">DRIVER:fd = ashmem_create_region(&quot;gralloc-buffer&quot;, size)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="995" y="529">M2:mAllocator = std::make_unique&lt;const Gralloc4Allocator&gt;(..)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="1148" y="489">N2:mMapper = std::make_unique&lt;const Gralloc4Mapper&gt;()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="1162" y="469">N1:GraphicBufferMapper()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="877" y="603">K2:err = allocator.allocate(...)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="1003" y="420">L1:GraphicBufferAllocator()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="1018" y="403">Singleton:getInstance()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="900" y="386">K1:GraphicBufferAllocator&amp; allocator = GraphicBufferAllocator::get()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="991" y="621">O1:return allocateHelper(...)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="746" y="748">H2:requestBuffer(..)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="194" y="727">G2:result = mGraphicBufferProducer-&gt;requestBuffer()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="1499" y="671">HAL:gralloc_alloc_buffer()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="1020" y="447">M1:mMapper(GraphicBufferMapper::getInstance()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="1024" y="650">P1:error = mAllocator-&gt;allocate(...)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="1506" y="754">HAL:err = mapBuffer(module, hnd);</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="1630" y="807">DRIVER:mappedAddress = mmap(0, size...)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="1620" y="774">HAL:gralloc_map()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="453" y="752">BINDER:onTransact()</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="1369" y="661">HAL:gralloc_alloc(..)</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="490" y="788">*buf = mSlots[slot].mGraphicBuffer</text>
+</g>
+<g>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="482" y="891">Q1:*buf = new GraphicBuffer()</text>
+</g>
+<g>
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 184 177 L 201 177 L 201 184 L 184 184" />
+	<polygon fill="#000000" stroke="none" points="184,184 188,188 188,180" />
+</g>
+<g>
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 1141 463 L 1158 463 L 1158 470 L 1141 470" />
+	<polygon fill="#000000" stroke="none" points="1141,470 1145,474 1145,466" />
+</g>
+<g>
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 997 399 L 1014 399 L 1014 406 L 997 406" />
+	<polygon fill="#000000" stroke="none" points="997,406 1001,410 1001,402" />
+</g>
+<g>
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 874 369 L 891 369 L 891 376 L 874 376" />
+	<polygon fill="#000000" stroke="none" points="874,376 878,380 878,372" />
+</g>
+<g>
+	<polygon fill="#c0ffff" stroke="black" stroke-opacity="1" points="1302,341 1504,341 1504,351 1514,351 1514,451 1302,451 1302,341" />
+	<line stroke="black" stroke-opacity="1" x1="1504" y1="341" x2="1514" y2="351" />
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="1312" y="366">Open HAL and Load Mapper </text>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="1312" y="381">Gralloc4Mapper</text>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="1312" y="396">OR</text>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="1312" y="411">Gralloc3Mapper</text>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="1312" y="426">OR</text>
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" x="1312" y="441">Gralloc2Mapper</text>
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="349" y="8" width="3" height="21" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="223" y="26" width="129" height="3" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="219" y="4" width="130" height="22" />
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="284" y="21">:StubProducerListener</text>
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="873" y1="394" x2="979" y2="394" />
+	<polygon fill="#000000" stroke="none" points="979,394 975,390 975,398" />
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="504" y="8" width="3" height="21" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="358" y="26" width="149" height="3" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="354" y="4" width="150" height="22" />
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="429" y="21">:BpGraphicBufferProducer</text>
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="1140" y1="496" x2="1240" y2="496" />
+	<polygon fill="#000000" stroke="none" points="1240,496 1236,492 1236,500" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="183" y1="196" x2="281" y2="196" />
+	<polygon fill="#000000" stroke="none" points="281,196 277,192 277,200" />
+</g>
+<g>
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 190 219 L 207 219 L 207 226 L 190 226" />
+	<polygon fill="#000000" stroke="none" points="190,226 194,230 194,222" />
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="666" y="8" width="3" height="21" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="520" y="26" width="149" height="3" />
+	<rect fill="#90e990" stroke="black" stroke-width="1" stroke-opacity="1" x="516" y="4" width="150" height="22" />
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="591" y="21">:BnGraphicBufferProducer</text>
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="802" y="8" width="3" height="21" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="677" y="26" width="128" height="3" />
+	<rect fill="#90e990" stroke="black" stroke-width="1" stroke-opacity="1" x="673" y="4" width="129" height="22" />
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="738" y="21">:BufferQueueProducer</text>
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="189" y1="243" x2="426" y2="243" />
+	<polygon fill="#000000" stroke="none" points="426,243 422,239 422,247" />
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="902" y="8" width="3" height="21" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="821" y="26" width="84" height="3" />
+	<rect fill="#90e990" stroke="black" stroke-width="1" stroke-opacity="1" x="817" y="4" width="85" height="22" />
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="860" y="21">:GraphicBuffer</text>
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1048" y="8" width="3" height="21" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="920" y="26" width="131" height="3" />
+	<rect fill="#90e990" stroke="black" stroke-width="1" stroke-opacity="1" x="916" y="4" width="132" height="22" />
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="982" y="21">:GraphicBufferAllocator</text>
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1189" y="8" width="3" height="21" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1067" y="26" width="125" height="3" />
+	<rect fill="#90e990" stroke="black" stroke-width="1" stroke-opacity="1" x="1063" y="4" width="126" height="22" />
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="1126" y="21">:GraphicBufferMapper</text>
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1292" y="8" width="3" height="21" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1199" y="26" width="96" height="3" />
+	<rect fill="#90e990" stroke="black" stroke-width="1" stroke-opacity="1" x="1195" y="4" width="97" height="22" />
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="1244" y="21">:Gralloc4Mapper</text>
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1408" y="8" width="3" height="21" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1309" y="26" width="102" height="3" />
+	<rect fill="#90e990" stroke="black" stroke-width="1" stroke-opacity="1" x="1305" y="4" width="103" height="22" />
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="1357" y="21">:Gralloc4Allocator</text>
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1534" y="8" width="3" height="21" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1442" y="26" width="95" height="3" />
+	<rect fill="#e0ffff" stroke="black" stroke-width="1" stroke-opacity="1" x="1438" y="4" width="96" height="22" />
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="1486" y="21">:HAL:gralloc.cpp</text>
+</g>
+<g>
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1654" y="8" width="3" height="21" />
+	<rect fill="#808080" stroke="none" stroke-opacity="1" x="1556" y="26" width="101" height="3" />
+	<rect fill="#e0ffff" stroke="black" stroke-width="1" stroke-opacity="1" x="1552" y="4" width="102" height="22" />
+	<text font-family="Helvetica" font-size="11" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="1603" y="21">:HAL:mapper.cpp</text>
+</g>
+</svg>

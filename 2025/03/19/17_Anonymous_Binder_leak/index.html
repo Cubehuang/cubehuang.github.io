@@ -1,0 +1,875 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/site_icon.png">
+  <link rel="icon" href="/main_wallpapers/site_icon_2.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#37AFE1">
+  <meta name="author" content="CubeHuang">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="1.问题背景2025&#x2F;3&#x2F;20近期项目的新一轮monkey出现了一个system_crash的JE问题  Android version：Android V platform：MTK test: monkey (7days) times: 7 次 可用日志：db 文件、mobile log（events、system、main、kernel、crash）、hprof（进程内存快">
+<meta property="og:type" content="article">
+<meta property="og:title" content="匿名Binder内存泄漏问题总结">
+<meta property="og:url" content="https://cubehuang.github.io/2025/03/19/17_Anonymous_Binder_leak/">
+<meta property="og:site_name" content="Cubehuang_blog">
+<meta property="og:description" content="1.问题背景2025&#x2F;3&#x2F;20近期项目的新一轮monkey出现了一个system_crash的JE问题  Android version：Android V platform：MTK test: monkey (7days) times: 7 次 可用日志：db 文件、mobile log（events、system、main、kernel、crash）、hprof（进程内存快">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/17_Anonymous_Binder_leak/Image.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/17_Anonymous_Binder_leak/Image_1.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/17_Anonymous_Binder_leak/Image_2.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/17_Anonymous_Binder_leak/Image_3.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/17_Anonymous_Binder_leak/Image_4.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/17_Anonymous_Binder_leak/Image_5.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/17_Anonymous_Binder_leak/Image_6.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/17_Anonymous_Binder_leak/Image_7.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/17_Anonymous_Binder_leak/Image_8.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/17_Anonymous_Binder_leak/Image_9.png">
+<meta property="article:published_time" content="2025-03-19T06:28:11.000Z">
+<meta property="article:modified_time" content="2025-03-20T12:38:17.000Z">
+<meta property="article:author" content="CubeHuang">
+<meta property="article:tag" content="Binder">
+<meta property="article:tag" content="问题总结">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://cubehuang.github.io/blog_imgs/17_Anonymous_Binder_leak/Image.png">
+  
+  
+  
+  <title>匿名Binder内存泄漏问题总结 - Cubehuang_blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"cubehuang.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":["home","post","category","about","links","archive"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"left","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>CubeHuang</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/main_wallpapers/wp_1.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="匿名Binder内存泄漏问题总结"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2025-03-19 14:28" pubdate>
+          2025年3月19日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          8.2k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          69 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="padding-left: 2rem; margin-right: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">匿名Binder内存泄漏问题总结</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h3 id="1-问题背景"><a href="#1-问题背景" class="headerlink" title="1.问题背景"></a>1.问题背景</h3><p>2025&#x2F;3&#x2F;20<br>近期项目的新一轮monkey出现了一个system_crash的JE问题</p>
+<ul>
+<li><strong>Android version</strong>：Android V</li>
+<li><strong>platform</strong>：MTK</li>
+<li><strong>test</strong>: monkey (7days)</li>
+<li><strong>times</strong>: 7 次</li>
+<li><strong>可用日志</strong>：db 文件、mobile log（events、system、main、kernel、crash）、hprof（进程内存快照）、binder_logs（failed_transaction_log、proc、state、stats、transaction_log、transactions）</li>
+</ul>
+<h3 id="2-问题分析"><a href="#2-问题分析" class="headerlink" title="2.问题分析"></a>2.问题分析</h3><p>从crash信息来看：</p>
+<p><img src="/blog_imgs/17_Anonymous_Binder_leak/Image.png" srcset="/img/loading.gif" lazyload alt="22108bd69660d27ed7a1cb57293674f0.png"><br>从<code>crash log</code>中的初步信息是<code>system</code>中的<code>BinderProxy</code> 中存在了过多的<code>entry</code>，总量达到了<code>27056</code>. 同时查看了其他几份JE的日志均是如此：entry 达到了26000+-&gt;27000+.</p>
+<h4 id="2-1问题初步分析"><a href="#2-1问题初步分析" class="headerlink" title="2.1问题初步分析"></a>2.1问题初步分析</h4><p>进一步我们通过crash log 发现除了<code>system_server</code>的JE，还存在<code>Launcher</code>的频繁<strong>JE</strong>（不停crash，频率：2s一次），<code>launcher JE</code>的初步原因是：</p>
+<ul>
+<li><code>android.database.sqlite.SQLiteBlobTooBigException,Row too big to fit into CursorWindow requiredPos=88, totalRows=89,SQLiteConnection.java</code></li>
+</ul>
+<p>进一步我们排查<strong>main log</strong>查找对应<strong>system_server</strong>的异常<strong>tid</strong>有如下线索：</p>
+<p><img src="/blog_imgs/17_Anonymous_Binder_leak/Image_1.png" srcset="/img/loading.gif" lazyload alt="44563a2eafd7ef4b6a2d9d350a66b72e.png"></p>
+<p>从log中我们可以看到，<strong>total&#x3D;27000+</strong> 即<code>BinderProxy</code>的<code>entry</code>数量。访问<code>system_server</code> 进程的PID为<strong>27344</strong>，该进程通过接口<code>IWallpaperManager</code> 来访问<code>system_server</code>进程，在<code>BinderProxy</code>的<strong>set</strong>函数中检测到了<code>BinderProxy</code>数量超了，可能是<code>BinderProxy</code> 泄漏导致，从而抛出异常报错。</p>
+<p>那么<strong>pid&#x3D;27344</strong>是哪个进程呢？</p>
+<p><img src="/blog_imgs/17_Anonymous_Binder_leak/Image_2.png" srcset="/img/loading.gif" lazyload alt="ddeb71ca2decf85c9bc1674077bbfb03.png"></p>
+<p>是<code>Launcher</code>进程，<code>Launcher</code>进程通过<code>IWallpaperManager</code>的接口访问<code>system_server</code>，<code>system_server</code>抛出异常返回到<strong>Launcher</strong>端，导致了<code>Launcher</code>也收到<code>BinderProxy</code> 数量异常，从而<strong>Launcher crash</strong>。</p>
+<p>所以<strong>system_server进程crash是和Launcher进程不断的crash有关吗</strong>？</p>
+<h4 id="2-2-详细排查"><a href="#2-2-详细排查" class="headerlink" title="2.2 详细排查"></a>2.2 详细排查</h4><p>目前确实比较怀疑是和<strong>Launcher</strong>的不断<strong>crash</strong>有关。但是往往“泄漏”类问题，进程出现异常的那一刻往往是“压死骆驼的最后一根稻草”。</p>
+<p>问题的原因还得排查<strong>BinderProxy</strong>为什么会那么多？或者如果真的是泄漏，那么在<strong>BinderProxy</strong>中的到底是哪一类相同的<strong>BinderProxy</strong>实例比较多呢？<br>下一步的排查点： 在<strong>BinderProxy</strong>中的哪一类的<strong>BinderProxy</strong>保存较多？</p>
+<p>我们查看<strong>set</strong>函数的代码：</p>
+<p><img src="/blog_imgs/17_Anonymous_Binder_leak/Image_3.png" srcset="/img/loading.gif" lazyload alt="03ed069668bd85105a8be18f0bc496ba.png"></p>
+<p> 从代码中我们可以得知，当<code>BinderProxy map</code>中的<strong>entry</strong>数量大于<strong>25000+</strong>，则会抛出异常，从而<code>crash</code>。并且在抛出异常之前会<code>dump BinderProxy map</code>中相关详细信息（上图中紫色部分函数），这两个函数输出的log是问题排查的关键。遗憾的是我在log中没有找到相关的log，原因是：我司同事由于这两个函数会导致<code>system_server</code>死锁问题，所以将两个函数注释掉了，但是取而代之使用<br> <code>android.os.Debug.dumpHprofData(path)</code>直接<code>dump hprof</code>文件，所以我这里无法根据原生的<code>log分析entry</code>的情况。</p>
+<p> 但是相对来说，排查 <code>hprof</code>的方式是比起<strong>分析log</strong>利于分析泄漏类问题：hprof保存了进程那一时刻的内存快照，包含引用链、内存对象的分配数量、内存对象的成员信息。</p>
+<p> <img src="/blog_imgs/17_Anonymous_Binder_leak/Image_4.png" srcset="/img/loading.gif" lazyload alt="254eda734cb1df36050c91dff9cb3059.png"><br> 从<strong>hprof</strong>内容来看：<br> （由于我们只关注<code>BinderProxy</code>中实例最多的<code>BinderProxy</code>，所以我们只需要关注<code>BinderProxy</code>引用链和数量的情况，我们不能像排查 普通堆内存泄漏的问题那样，需要关注整体进程中的内存对象）</p>
+<ul>
+<li>检索“<strong>BinderProxy</strong>”过滤</li>
+<li>确认发现<code>BinderProxy</code> 数量达到26000+</li>
+<li>确认哪类<code>BinderProxy</code> 数量较多？（技巧点：查看<strong>depth+Retained size</strong> 都相同的+数量多 三个条件的对象就是我们需要找到异常<code>BinderProxy</code>）</li>
+<li>从图中的GC root我们可以确定模块</li>
+<li>再次确认是否是模块中的<code>BinderProxy</code>数量异常。检索<code>GC root</code>（图中抹掉的：XXXXManagerService$BinderService）<br><img src="/blog_imgs/17_Anonymous_Binder_leak/Image_5.png" srcset="/img/loading.gif" lazyload alt="74f8191a5f9b1d1167ee4aab4d48aeac.png"></li>
+</ul>
+<p> 从图中我们确认能看到对应模块下<code>XXXXManagerService$BinderService中的mXXXmap</code>成员数量达到21000+</p>
+<p> 由于该模块代码我并无权限查看，交给对应模块进行排查即可。</p>
+<p> 我猜测问题的大致导向是这样（后期和模块owner核对证实确实这样）:</p>
+<ul>
+<li><code>Launcher 进程</code>启动过程中会生成<code>匿名Binder对象</code>，通过<code>IWallpaperManager</code>（或者其他接口）向<code>system_server</code> 注册匿名<code>Binder</code>的代理，<code>system_server</code> 客制化模块保存了过多的<code>匿名Binder代理对象</code>（<code>BinderProxy</code>），然后<strong>Launcher</strong> 有不断<strong>crash</strong>的情况，<strong>crash</strong>后<strong>system_server</strong>中的代理对象并没有销毁，最终造成泄漏。</li>
+</ul>
+<h4 id="2-3-问题解决途径"><a href="#2-3-问题解决途径" class="headerlink" title="2.3 问题解决途径"></a>2.3 问题解决途径</h4><p> 根据后期和模块owner沟通，在模块客制化代码中添加如下内容来解决此问题<br> system_server中的XXXService</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> Map&lt;IXXXXObserver, IXXXXListener&gt; mXXXX_map = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayMap</span>&lt;&gt;();<br><br><span class="hljs-meta">@Override</span><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">registerXXXXObserver</span><span class="hljs-params">(IXXXXObserver observer, String name)</span> &#123;<br>    <span class="hljs-type">XXXXListener</span> <span class="hljs-variable">listeners</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">XXXXListener</span>();<br>    listeners.registerXXXXObserver(observer,name);<br>    mXXXX_map.put(observer, listeners);<br>    <span class="hljs-comment">//修改点</span><br>+    <span class="hljs-keyword">try</span> &#123;<br>+        observer.asBinder().linkToDeath(<span class="hljs-keyword">new</span> <span class="hljs-title class_">IBinder</span>.DeathRecipient()) &#123;<br>+            <span class="hljs-meta">@Override</span><br>+            <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">binderDied</span><span class="hljs-params">()</span> &#123;<br>+                observer.asBinder.unlinkToDeath(<span class="hljs-built_in">this</span>,<span class="hljs-number">0</span>);<br>+                listeners.unregisterXXXXObserver(observer);<br>+                mXXXX_map.remove(observer);<br>+            &#125;,<span class="hljs-number">0</span>)<br>+        &#125;<br>+        <br>+    &#125;<span class="hljs-keyword">catch</span> (DeadObjectException doe) &#123;<br>+        <span class="hljs-comment">// We are expecting the service to get killed mid call, so a DeadObjectException</span><br>+        <span class="hljs-comment">// is not unexpected</span><br>+   &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+<p>从修改的方案来看，情况就清晰明了了，确实也就和猜测的一样：</p>
+<p><strong>问题根因</strong>：</p>
+<blockquote>
+<p>Launcher 进程不断crash，Launcher进程不断重启，不断注册，导致system_server中的匿名Binder代理对象增加，并且Launcher退出后，system_server没有监听到服务端退出的信息，从而无法销毁。造成泄漏。</p>
+</blockquote>
+<h4 id="2-4-解决方法："><a href="#2-4-解决方法：" class="headerlink" title="2.4 解决方法："></a>2.4 解决方法：</h4><p>实现<code>IBinder.DeathRecipient中的binderDied()</code> 方法，在<code>binderDied()</code>中实现保存的<code>BinderProxy</code>销毁动作</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><code class="hljs java">from:/frameworks/base/core/java/android/os/IBinder.java<br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * Interface for receiving a callback when the process hosting an IBinder</span><br><span class="hljs-comment">     * has gone away.</span><br><span class="hljs-comment">     *</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@see</span> #linkToDeath</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">interface</span> <span class="hljs-title class_">DeathRecipient</span> &#123;<br>        <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">binderDied</span><span class="hljs-params">()</span>;<br><br>        <span class="hljs-comment">/**</span><br><span class="hljs-comment">         * The function called when the process hosting an IBinder</span><br><span class="hljs-comment">         * has gone away.</span><br><span class="hljs-comment">         *</span><br><span class="hljs-comment">         * This callback will be called from any binder thread like any other binder</span><br><span class="hljs-comment">         * transaction. If the process receiving this notification is multithreaded</span><br><span class="hljs-comment">         * then synchronization may be required because other threads may be executing</span><br><span class="hljs-comment">         * at the same time.</span><br><span class="hljs-comment">         *</span><br><span class="hljs-comment">         * No locks are held in libbinder when &#123;<span class="hljs-doctag">@link</span> binderDied&#125; is called.</span><br><span class="hljs-comment">         *</span><br><span class="hljs-comment">         * There is no need to call &#123;<span class="hljs-doctag">@link</span> unlinkToDeath&#125; in the binderDied callback.</span><br><span class="hljs-comment">         * The binder is already dead so &#123;<span class="hljs-doctag">@link</span> unlinkToDeath&#125; is a no-op.</span><br><span class="hljs-comment">         * It will be unlinked when the last local reference of that binder proxy is</span><br><span class="hljs-comment">         * dropped.</span><br><span class="hljs-comment">         *</span><br><span class="hljs-comment">         * <span class="hljs-doctag">@param</span> who The IBinder that has become invalid</span><br><span class="hljs-comment">         */</span><br>        <span class="hljs-keyword">default</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">binderDied</span><span class="hljs-params">(<span class="hljs-meta">@NonNull</span> IBinder who)</span> &#123;<br>            binderDied();<br>        &#125;<br>    &#125;<br></code></pre></td></tr></table></figure>
+<h3 id="3-问题总结"><a href="#3-问题总结" class="headerlink" title="3. 问题总结"></a>3. 问题总结</h3><ul>
+<li><strong>问题所属</strong>：该问题比较典型，属于未能规范使用匿名Binder导致。</li>
+<li><strong>分析方法</strong>：如遇到此类问题，一方面可以从原生<strong>log</strong>中窥探较多的<strong>BinderProxy</strong>对象从属模块，通过模块缩小范围进行排查，另一方面可以在异常抛出前先<strong>dump hprof</strong>，通过内存快照信息来分析此类问题。（如上述提到的方法）</li>
+<li><strong>为什么监测猜想</strong>: 可能是由于过多的<strong>BinderProxy</strong> 可能会占用过多内存.也可能是一方面太多的<strong>binder_ref</strong>会影响到红黑树的遍历速度</li>
+</ul>
+<h4 id="3-1-问题拓展"><a href="#3-1-问题拓展" class="headerlink" title="3.1. 问题拓展"></a>3.1. 问题拓展</h4><h5 id="3-1-1-原生代码中DeathRecipient接口的使用"><a href="#3-1-1-原生代码中DeathRecipient接口的使用" class="headerlink" title="3.1.1 原生代码中DeathRecipient接口的使用"></a>3.1.1 原生代码中DeathRecipient接口的使用</h5><p>在Android源码中关于<code>DeathRecipient</code> 接口的使用是很普遍的。<br>使用的场景在于：客户端进程保存服务端代理的情况下，服务端进程异常退出、服务实体主动退出等，客户端进程需要知道服务端退出，自身保存的代理也需要销毁，在这种场景下使用。</p>
+<p>很多场景是在使用匿名Binder的场景中。</p>
+<p><strong>案例</strong>：应用进程中匿名Binder：ApplicationThread</p>
+<p>在应用端的匿名<code>Binder：ApplicationThread extends IApplicationThread.Stub</code>，应用进程初始化过程中会产生匿名<code>binder</code>对象，通过<strong>AMS</strong>（实名Binder）注册到<strong>AMS</strong>中，<strong>AMS</strong>中进行保存，当应用进程退出后，<strong>匿名binder</strong>将会消失，所以对应<strong>AMS</strong>中保存的代理端<strong>BinderProxy</strong>也要同步清除掉。</p>
+<p><strong>应用进程侧</strong></p>
+<p><img src="/blog_imgs/17_Anonymous_Binder_leak/Image_6.png" srcset="/img/loading.gif" lazyload alt="12d7f118fdd66e7dfd95ba71360d04d8.png"><br>		<br><strong>system_server侧</strong></p>
+<p>   <img src="/blog_imgs/17_Anonymous_Binder_leak/Image_7.png" srcset="/img/loading.gif" lazyload alt="bef98bc4a4d14936a30e6bcd44251b9c.png"></p>
+<h5 id="3-1-2-匿名BinderProxy泄漏在binder驱动中log特点"><a href="#3-1-2-匿名BinderProxy泄漏在binder驱动中log特点" class="headerlink" title="3.1.2 匿名BinderProxy泄漏在binder驱动中log特点"></a>3.1.2 匿名BinderProxy泄漏在binder驱动中log特点</h5><p>无论是<strong>匿名Binder</strong>或者<strong>实名Binder</strong>，在<strong>驱动Binder</strong>均是<code>binder_node</code>表示，以红黑树的形式存在于Binder驱动中。使用强弱引用计数来维持其对象的生命周期，对应<strong>Binder代理</strong>，即我们此文中描述的<strong>BinderProxy</strong>，则以<strong>binder_ref</strong>表示，也是以红黑树的形式存在于<strong>Binder驱动</strong>中。如果<strong>BinderProxy</strong>出现泄漏，则会有如下特征：</p>
+<ul>
+<li><strong>stats</strong>:会打印关于各个<strong>binder_proc</strong>的大体信息（binder_node、binder_ref、binder_thread数量等）</li>
+</ul>
+<p><img src="/blog_imgs/17_Anonymous_Binder_leak/Image_8.png" srcset="/img/loading.gif" lazyload alt="50b4859907d0844300281ab260d9c16c.png"><br>从中捞了三份<strong>system_server JE</strong> 的<strong>binderlog</strong>，从<code>stats</code>中能看出<strong>system_server</strong> 进程中的<strong>refs</strong>数量很多<strong>26000+</strong>，也就是保存的binder 代理很多。</p>
+<ul>
+<li><strong>state</strong>： 打印具体的<strong>Binder</strong>驱动状态信息（<code>dead nodes</code>，<code>binder_proc</code>的详细信息：<code>binder_node</code>引用情况、<code>binder_ref</code>的引用情况、<code>binder_thread</code> 情况、<code>binder_transaction</code>情况）</li>
+</ul>
+<p><img src="/blog_imgs/17_Anonymous_Binder_leak/Image_9.png" srcset="/img/loading.gif" lazyload alt="9fc325d4e7e55d552b48caefb1aecae4.png"></p>
+<p>我们能从<code>state</code>日志中发现存在大量的<code>dead nodes</code>，引用的进程是<code>system_server</code> 1605进程。数量达到<strong>25000+</strong></p>
+<blockquote>
+<p>（起初我本想的是使用node 后面的数字来查找<code>node</code>所属的进程到底是不是<code>launcher</code> 进程，如果是的话，能实锤到就是Launcher进程crash间接导致。始终无法找到，由于<code>Launcher</code>进程频繁退出，在<code>binderlog</code>中不会记录过往<code>Launcher</code>进程退出的<code>pid</code>，所以这条路暂时行不通，但是如果<code>node</code>所属进程是存活的状态，是可以通过<code>node</code>数字来查找所属进程的）</p>
+</blockquote>
+<h3 id="4-后续补充"><a href="#4-后续补充" class="headerlink" title="4.后续补充"></a>4.后续补充</h3><p>后续我们在没有使用该<code>dump hprof</code>方案的源码版本中也遇到相类似的问题，并且得到原生打印的<strong>log</strong>后，发现还是无法定位到具体泄漏点，如下<strong>log</strong>能看到：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.650</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> V Binder  : <span class="hljs-function">BinderProxy descriptor <span class="hljs-title">histogram</span> <span class="hljs-params">(top <span class="hljs-number">10</span>)</span>:</span><br><span class="hljs-function"><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.650</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> V Binder  :  #<span class="hljs-number">1</span>: &lt;proxy to dead node&gt; x24335</span><br><span class="hljs-function"><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.650</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> V Binder  :  #<span class="hljs-number">2</span>: android.content.IIntentReceiver x191</span><br><span class="hljs-function"><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.650</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> V Binder  :  #<span class="hljs-number">3</span>: android.database.IContentObserver x63</span><br><span class="hljs-function"><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.650</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> V Binder  :  #<span class="hljs-number">4</span>: android.content.IContentProvider x61</span><br><span class="hljs-function"><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.650</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> V Binder  :  #<span class="hljs-number">5</span>:  x50</span><br><span class="hljs-function"><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.650</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> V Binder  :  #<span class="hljs-number">6</span>: BBinder x47</span><br><span class="hljs-function"><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.650</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> V Binder  :  #<span class="hljs-number">7</span>: android.os.IPullAtomCallback x44</span><br><span class="hljs-function"><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.651</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> V Binder  :  #<span class="hljs-number">8</span>: com.android.internal.telephony.ICarrierConfigChangeListener x41</span><br><span class="hljs-function"><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.651</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> V Binder  :  #<span class="hljs-number">9</span>: android.view.IWindow x40</span><br><span class="hljs-function"><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.651</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> V Binder  :  #<span class="hljs-number">10</span>: com.android.internal.telephony.IOnSubscriptionsChangedListener x38</span><br><span class="hljs-function"><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.651</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> D Binder  : Per Uid Binder Proxy Counts:</span><br><span class="hljs-function"><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.651</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> D Binder  : UID : <span class="hljs-number">1000</span>  count =</span> <span class="hljs-number">46</span><br><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.651</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> D Binder  : UID : <span class="hljs-number">1001</span>  count = <span class="hljs-number">385</span><br><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.651</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> D Binder  : UID : <span class="hljs-number">1041</span>  count = <span class="hljs-number">16</span><br><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.651</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> D Binder  : UID : <span class="hljs-number">1046</span>  count = <span class="hljs-number">12</span><br><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.651</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> D Binder  : UID : <span class="hljs-number">1068</span>  count = <span class="hljs-number">3</span><br><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.651</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> D Binder  : UID : <span class="hljs-number">1073</span>  count = <span class="hljs-number">23</span><br><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.651</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> D Binder  : UID : <span class="hljs-number">10023</span>  count = <span class="hljs-number">26</span><br><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.651</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> D Binder  : UID : <span class="hljs-number">10024</span>  count = <span class="hljs-number">3</span><br><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.651</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> D Binder  : UID : <span class="hljs-number">10033</span>  count = <span class="hljs-number">6</span><br><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.651</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> D Binder  : UID : <span class="hljs-number">10069</span>  count = <span class="hljs-number">4</span><br><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.651</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> D Binder  : UID : <span class="hljs-number">10083</span>  count = <span class="hljs-number">241</span><br><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.651</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> D Binder  : UID : <span class="hljs-number">10088</span>  count = <span class="hljs-number">24319</span><br><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.651</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> D Binder  : UID : <span class="hljs-number">10094</span>  count = <span class="hljs-number">7</span><br><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.651</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> D Binder  : UID : <span class="hljs-number">10100</span>  count = <span class="hljs-number">5</span><br><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.651</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> D Binder  : UID : <span class="hljs-number">10112</span>  count = <span class="hljs-number">16</span><br><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.651</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> D Binder  : UID : <span class="hljs-number">10113</span>  count = <span class="hljs-number">6</span><br><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.651</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> D Binder  : UID : <span class="hljs-number">10116</span>  count = <span class="hljs-number">5</span><br><span class="hljs-number">0</span>8<span class="hljs-number">-26</span> <span class="hljs-number">0</span>9:<span class="hljs-number">51</span>:<span class="hljs-number">18.651</span>  <span class="hljs-number">8072</span>  <span class="hljs-number">8089</span> D Binder  : UID : <span class="hljs-number">10121</span>  count = <span class="hljs-number">9</span><br></code></pre></td></tr></table></figure>
+
+<p>排在第一位的为<code>proxy to dead node</code> ，这种对象情况下将无法进一步分析异常模块。能够从原生的log中看到匿名binder对象的使用数量排名占比，以及是哪个uid引用的较多，下面log中<strong>uid&#x3D;10088</strong>进程访问了较多的<strong>匿名binder</strong>服务。<br>所以排查方法还是建议在异常抛出之前，dump一下进程的内存快照信息使用hprof文件来分析异常点：</p>
+<h3 id="5-监测方案"><a href="#5-监测方案" class="headerlink" title="5. 监测方案"></a>5. 监测方案</h3><p>Debug 版本中做<code>dump hprof</code> 操作，保留内存快照信息</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-comment">// frameworks/base/core/java/android/os/BinderProxy.java</span><br><span class="hljs-keyword">if</span> (totalUnclearedSize &gt;= CRASH_AT_SIZE) &#123;<br>    <span class="hljs-keyword">if</span> (Build.IS_DEBUGGABLE) &#123;<br>        dumpHprofAboutBinderProxyException();<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        dumpProxyInterfaceCounts();<br>        dumpPerUidProxyCounts();<br>        Runtime.getRuntime().gc();<br>    &#125;<br>    <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">BinderProxyMapSizeException</span>(...);<br>&#125;<br><br><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">dumpHprofAboutBinderProxyException</span><span class="hljs-params">()</span> &#123;<br>    <span class="hljs-comment">//...</span><br>    <span class="hljs-type">String</span> <span class="hljs-variable">filename</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;/data/anr/BinderProxyLeak-&quot;</span> + date + <span class="hljs-string">&quot;.hprof&quot;</span>;<br>    Debug.dumpHprofData(filename);<br>    <span class="hljs-comment">//...</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E9%97%AE%E9%A2%98%E8%AE%B0%E5%BD%95/" class="category-chain-item">问题记录</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/%E9%97%AE%E9%A2%98%E8%AE%B0%E5%BD%95/Binder/" class="category-chain-item">Binder</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93/" class="print-no-link">#问题总结</a>
+      
+        <a href="/tags/Binder/" class="print-no-link">#Binder</a>
+      
+    </div>
+  
+</div>
+
+
+              
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2025/03/20/3_ANR_failed_to_complete_startup/" title="ANR-failed to complete startup">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">ANR-failed to complete startup</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2024/05/22/5_InputDispatcher%E6%A6%82%E8%A7%88/" title="InputDispatcher概览">
+                        <span class="hidden-mobile">InputDispatcher概览</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

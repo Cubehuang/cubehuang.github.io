@@ -1,0 +1,874 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/site_icon.png">
+  <link rel="icon" href="/main_wallpapers/site_icon_2.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#37AFE1">
+  <meta name="author" content="CubeHuang">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="Android 版本：Android 16  平台：MTK 平台 问题场景：monkey稳定性测试 问题原因：由于三方应用（com.live.earthmap）频繁与system_server进行大内存Binder消息传输所致。当Settings此时与system_server进行Binder通信时，system_server的binder buffer被耗尽，导致Settings无法访问，从而">
+<meta property="og:type" content="article">
+<meta property="og:title" content="system_server binder内存耗尽导致应用crash问题总结">
+<meta property="og:url" content="https://cubehuang.github.io/2025/11/13/16_Binder_Binder%E5%86%85%E5%AD%98%E8%80%97%E5%B0%BD%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93/">
+<meta property="og:site_name" content="Cubehuang_blog">
+<meta property="og:description" content="Android 版本：Android 16  平台：MTK 平台 问题场景：monkey稳定性测试 问题原因：由于三方应用（com.live.earthmap）频繁与system_server进行大内存Binder消息传输所致。当Settings此时与system_server进行Binder通信时，system_server的binder buffer被耗尽，导致Settings无法访问，从而">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-11-13T09:28:06.000Z">
+<meta property="article:modified_time" content="2025-11-13T09:28:07.000Z">
+<meta property="article:author" content="CubeHuang">
+<meta property="article:tag" content="Binder">
+<meta property="article:tag" content="问题总结">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>system_server binder内存耗尽导致应用crash问题总结 - Cubehuang_blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"cubehuang.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":["home","post","category","about","links","archive"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"left","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>CubeHuang</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/main_wallpapers/wp_1.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="system_server binder内存耗尽导致应用crash问题总结"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2025-11-13 17:28" pubdate>
+          2025年11月13日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          13k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          108 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="padding-left: 2rem; margin-right: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">system_server binder内存耗尽导致应用crash问题总结</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <ul>
+<li><strong>Android 版本</strong>：Android 16 </li>
+<li><strong>平台</strong>：MTK 平台</li>
+<li><strong>问题场景</strong>：monkey稳定性测试</li>
+<li><strong>问题原因</strong>：由于三方应用（<code>com.live.earthmap</code>）频繁与<code>system_server</code>进行大内存<strong>Binder消息</strong>传输所致。当<code>Settings</code>此时与<code>system_server</code>进行<code>Binder</code>通信时，<code>system_server</code>的<code>binder buffer</code>被耗尽，导致<code>Settings</code>无法访问，从而触发<code>Crash</code>。</li>
+</ul>
+<h3 id="1-events-日志线索解读"><a href="#1-events-日志线索解读" class="headerlink" title="1. events 日志线索解读"></a>1. events 日志线索解读</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-number">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">03</span>:<span class="hljs-number">40.777</span>  <span class="hljs-number">1553</span>  <span class="hljs-number">3498</span> I am_crash: [<span class="hljs-number">956</span>,<span class="hljs-number">0</span>,com.google.android.googlequicksearchbox:googleapp,-<span class="hljs-number">1461993915</span>,android.os.DeadSystemException,android.os.DeadSystemException,ActivityClient.java,<span class="hljs-number">104</span>,<span class="hljs-number">0</span>]<br><span class="hljs-number">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42.482</span>  <span class="hljs-number">1553</span>  <span class="hljs-number">2514</span> I am_crash: [<span class="hljs-number">32006</span>,<span class="hljs-number">0</span>,com.android.settings,<span class="hljs-number">952876613</span>,android.os.DeadObjectException,Transaction failed on small parcel; remote process probably died, but <span class="hljs-built_in">this</span> could also be caused by running out of binder buffer space,BinderProxy.java,-<span class="hljs-number">2</span>,<span class="hljs-number">0</span>]<br><span class="hljs-number">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">05</span>:<span class="hljs-number">07.753</span>  <span class="hljs-number">1553</span>  <span class="hljs-number">2515</span> I am_crash: [<span class="hljs-number">3834</span>,<span class="hljs-number">0</span>,com.android.settings,<span class="hljs-number">952876613</span>,android.os.DeadObjectException,Transaction failed on small parcel; remote process probably died, but <span class="hljs-built_in">this</span> could also be caused by running out of binder buffer space,BinderProxy.java,-<span class="hljs-number">2</span>,<span class="hljs-number">0</span>]<br></code></pre></td></tr></table></figure>
+<ul>
+<li><strong>PID</strong>：<strong>956</strong> - <strong>googlequicksearchbox</strong> 应用出现了 <code>DeadSystemException</code>。</li>
+<li><strong>PID</strong>：<strong>32006</strong> 和 <strong>3834</strong> - <strong>Settings</strong> 应用出现了两例<code>DeadObjectException</code>，日志表明在 Settings 与 <code>system_server</code> 的 Binder 交互中，传输一个小的 parcel 时失败，这表明出现了<strong>服务端</strong>异常，可能是由于服务端 <strong>binder buffer</strong> 耗尽导致。</li>
+</ul>
+<blockquote>
+<p>问：parcel 要多小才叫“small parcel”？<br>答：从 <code>android_util_Binder.cpp</code> 代码来看，小于 200KB 的 parcel 为 small parcel。</p>
+</blockquote>
+<h3 id="2-main-日志线索解读"><a href="#2-main-日志线索解读" class="headerlink" title="2. main 日志线索解读"></a>2. main 日志线索解读</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-number">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42.462</span> <span class="hljs-number">32006</span>  <span class="hljs-number">5685</span> E IPCThreadState: Binder transaction failure. id: <span class="hljs-number">253959940</span>, BR_*: <span class="hljs-number">29201</span>, error: -<span class="hljs-number">28</span> (No space left on device)<br><span class="hljs-number">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42.463</span> <span class="hljs-number">32006</span>  <span class="hljs-number">5685</span> E JavaBinder: !!! FAILED BINDER TRANSACTION !!!  (<span class="hljs-type">parcel</span> <span class="hljs-variable">size</span> <span class="hljs-operator">=</span> <span class="hljs-number">59848</span>)<br><span class="hljs-number">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42.463</span>  <span class="hljs-number">1553</span>  <span class="hljs-number">2514</span> W ActivityManager: pid <span class="hljs-number">32006</span> com.android.settings sent binder code <span class="hljs-number">140</span> with flags <span class="hljs-number">2</span> to frozen apps and got error -<span class="hljs-number">2147483646</span><br><span class="hljs-number">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42.476</span> <span class="hljs-number">32006</span>  <span class="hljs-number">5685</span> I ExceptionHandle: at android.app.LoadedApk$ReceiverDispatcher$Args.lambda$getRunnable$<span class="hljs-number">0</span>(LoadedApk.java:<span class="hljs-number">1859</span>)<br><span class="hljs-number">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42.477</span> <span class="hljs-number">32006</span>  <span class="hljs-number">5685</span> I ExceptionHandle: at android.app.LoadedApk$ReceiverDispatcher$Args.$r8$lambda$mcNAAl1SQ4MyJPyDg8TJ2x2h0Rk(Unknown Source:<span class="hljs-number">0</span>)<br><span class="hljs-number">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42.479</span> <span class="hljs-number">32006</span>  <span class="hljs-number">5685</span> I ExceptionHandle: at android.app.LoadedApk$ReceiverDispatcher$Args$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:<span class="hljs-number">0</span>)<br><span class="hljs-number">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42.479</span> <span class="hljs-number">32006</span>  <span class="hljs-number">5685</span> I ExceptionHandle: at android.os.Handler.handleCallback(Handler.java:<span class="hljs-number">959</span>)<br><span class="hljs-number">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42.479</span> <span class="hljs-number">32006</span>  <span class="hljs-number">5685</span> I ExceptionHandle: at android.os.Handler.dispatchMessage(Handler.java:<span class="hljs-number">100</span>)<br><span class="hljs-number">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42.479</span> <span class="hljs-number">32006</span>  <span class="hljs-number">5685</span> I ExceptionHandle: at android.os.Looper.loopOnce(Looper.java:<span class="hljs-number">311</span>)<br><span class="hljs-number">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42.479</span> <span class="hljs-number">32006</span>  <span class="hljs-number">5685</span> I ExceptionHandle: at android.os.Looper.loop(Looper.java:<span class="hljs-number">408</span>)<br><span class="hljs-number">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42.479</span> <span class="hljs-number">32006</span>  <span class="hljs-number">5685</span> I ExceptionHandle: at android.os.HandlerThread.run(HandlerThread.java:<span class="hljs-number">85</span>)<br></code></pre></td></tr></table></figure>
+<p><strong>日志逐条解读</strong>：</p>
+<ul>
+<li><code>E IPCThreadState: Binder transaction failure. id: 253959940, BR_*: 29201, error: -28 (No space left on device)</code></li>
+<li>id: 253959940：binder transaction 的 id，一个 binder transaction 只有一个 id，通常我们在其他问题分析过程中可以依靠这个 id 找到 binder 交互对端的信息。<br>例如我们可以在 kernel 日志中或者 dump 的 binder 日志中查找这个 id 信息，可以得到以下有用信息：</li>
+<li><strong>kernel 日志</strong>：<code>binder: 32006:5685 transaction call to 1553:0 failed 253959940/29201/-28, size 59848-0 line 3548</code></li>
+<li><strong>dump 的 binder 日志</strong>：<code>253959940: call  from 32006:5685 to 1553:0 context binder node 6873 handle 58 size 59848:0 ret 29201/-28 l=3548</code></li>
+</ul>
+<p>我们从上面的三处 binder 相关的日志来看，它们描述的基本信息都是一致的。</p>
+<ul>
+<li>BR_*: 29201：这个 29201 是指 <strong>binder ioctl</strong> 中 BR 操作码，没有什么价值，就是单纯记录 binder 驱动返回到用户态交互的走向。</li>
+<li>main_log：<code>error: -28 (No space left on device)</code>、kernel_log：<code>/-28</code> 和 binder_log：<code>/-28</code>，这三个信息和 errno-base.h 的 <code>#define	ENOSPC		28	/* No space left on device */</code> 一致，就是指没有空间了，这里指的是 binder buffer 不足了。</li>
+<li>两端的交互信息：<code>32006:5685 to 1553:0</code> 就是进程 32006 中线程 5685 向 1553 进程交互，这里的<strong>0</strong>是什么意思呢？此时由于没有 <strong>binder buffer</strong>，所以 <strong>1553</strong> 进程中并没有分配给对应的 <strong>binder 线程</strong> 提供处理，所以是<strong>0</strong>。</li>
+<li><code>size 59848</code> 则是传输数据量的大小，单位 <strong>B</strong>，这个数据需要使用 <strong>binder buffer</strong> 来承载传输，而此时就是由于 <strong>1553</strong> 中的 <strong>binder_buffer</strong> 不足以分配 <strong>59848B</strong>，所以交互失败。</li>
+<li><code>line 3548</code> 指的是 binder 驱动中 <code>binder.c</code> 代码的行号，错误是从这里返回去的。</li>
+</ul>
+<p>上面的 main 日志差不多就解读完毕，还有一个值得解读的点：</p>
+<ul>
+<li><code>pid 32006 com.android.settings sent binder code 140 with...</code><br>这里的 binder code 140，指的是 binder 交互的方法位置。</li>
+</ul>
+<p>看一下我下面贴的 crash 日志：<code>getWifiConfigForMatchedNetworkSuggestionsSharedWithUser</code>。</p>
+<figure class="highlight avrasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs avrasm">// <span class="hljs-number">3.</span> crash 日志<br><span class="hljs-symbol">java.lang.RuntimeException:</span> android.os.DeadObjectException: Transaction failed on small parcel<span class="hljs-comment">; remote process probably died, but this could also be caused by running out of binder buffer space</span><br>	at android.net.wifi.WifiManager.getWifiConfigForMatchedNetworkSuggestionsSharedWithUser(WifiManager.java:<span class="hljs-number">2710</span>)<br>	at <span class="hljs-keyword">com</span>.android.wifitrackerlib.WifiPickerTracker.updateSuggestedWifiEntryScans(WifiPickerTracker.java:<span class="hljs-number">798</span>)<br>	at <span class="hljs-keyword">com</span>.android.wifitrackerlib.WifiPickerTracker.conditionallyUpdateScanResults(WifiPickerTracker.java:<span class="hljs-number">1102</span>)<br>	at <span class="hljs-keyword">com</span>.android.wifitrackerlib.WifiPickerTracker.handleScanResultsAvailableAction(WifiPickerTracker.java:<span class="hljs-number">337</span>)<br>	at <span class="hljs-keyword">com</span>.android.wifitrackerlib.BaseWifiTracker<span class="hljs-number">$Scanner</span><span class="hljs-number">$1</span>.lambda<span class="hljs-number">$onResults</span><span class="hljs-number">$0</span>(BaseWifiTracker.java:<span class="hljs-number">712</span>)<br>	at <span class="hljs-keyword">com</span>.android.wifitrackerlib.BaseWifiTracker<span class="hljs-number">$Scanner</span><span class="hljs-number">$1</span>.$<span class="hljs-built_in">r8</span><span class="hljs-number">$lambda</span><span class="hljs-number">$4Rj2R0ObnvYAEtfW7Dri9JrXXQ8</span>(BaseWifiTracker.java:<span class="hljs-number">0</span>)<br>	at <span class="hljs-keyword">com</span>.android.wifitrackerlib.BaseWifiTracker<span class="hljs-number">$Scanner</span><span class="hljs-number">$1</span>$$ExternalSyntheticLambda1.run(<span class="hljs-built_in">R8</span>$$SyntheticClass:<span class="hljs-number">0</span>)<br>	at android.os.Handler.handleCallback(Handler.java:<span class="hljs-number">959</span>)<br>	at android.os.Handler.dispatchMessage(Handler.java:<span class="hljs-number">100</span>)<br>	at android.os.Looper.loopOnce(Looper.java:<span class="hljs-number">311</span>)<br>	at android.os.Looper.loop(Looper.java:<span class="hljs-number">408</span>)<br>	at android.os.HandlerThread.run(HandlerThread.java:<span class="hljs-number">85</span>)<br>Caused by: android.os.DeadObjectException: Transaction failed on small parcel<span class="hljs-comment">; remote process probably died, but this could also be caused by running out of binder buffer space</span><br>	at android.os.BinderProxy.transactNative(Native Method)<br>	at android.os.BinderProxy.transact(BinderProxy.java:<span class="hljs-number">686</span>)<br>	at android.net.wifi.IWifiManager<span class="hljs-number">$Stub</span><span class="hljs-number">$Proxy</span>.getWifiConfigForMatchedNetworkSuggestionsSharedWithUser(IWifiManager.java:<span class="hljs-number">5943</span>)<br>	at android.net.wifi.WifiManager.getWifiConfigForMatchedNetworkSuggestionsSharedWithUser(WifiManager.java:<span class="hljs-number">2707</span>)<br></code></pre></td></tr></table></figure>
+
+<p>有堆栈的时候我们能一眼看到 <strong>binder 交互</strong> 的方法是哪一个？如上所示。</p>
+<p>如果没有堆栈，我们可能无法知道 <strong>binder 交互在哪一个接口</strong>，那么我们可以通过这个 <strong>binder code</strong> 找到哪个方法（不信的话你可以检索一下 <code>getWifiConfigForMatchedNetworkSuggestionsSharedWithUser</code> 这个方法在 aidl 文件中的位置，是不是就是 <strong>AIDL</strong> 文件中的第 <strong>140</strong> 个方法）。</p>
+<p><strong>值得一提</strong>：<br>以前 Android 老版本中 <code>events日志</code> 中有关键字 <strong>binder_sample</strong> 打印出 binder 交互接口的耗时信息：<br><strong>例如</strong>：<br>binder_sample: [android.app.IActivityTaskManager,174,376494,com.XXXX.XXXX,100]，<code>174</code> 表明 <strong>xxx 应用</strong> 在和 <strong>system_server</strong> 交互的接口出现了 <strong>376494ms</strong> 的耗时，接口的位置为 <code>IActivityTaskManager.aidl</code> 中的第 <strong>174</strong> 个方法。</p>
+<p>日志分析完毕，目前问题分析现状如下：</p>
+<ul>
+<li><strong>Settings</strong> 和 <strong>system_server</strong> 交互过程中，需要申请 <strong>system_server</strong> 进程中的 <strong>59848B</strong> 的 <code>binder buffer</code>，申请不到，导致交互失败。</li>
+<li><strong>问题</strong>：申请的 <code>binder buffer</code> 也不算大呀，<code>binder buffer</code> 已经使用了多少？谁使用多了吗？</li>
+</ul>
+<h3 id="3-kernel-日志解读"><a href="#3-kernel-日志解读" class="headerlink" title="3. kernel 日志解读"></a>3. kernel 日志解读</h3><ul>
+<li><strong>问题</strong>：申请的 <code>binder buffer</code> 也不算大呀，<code>binder buffer</code> 已经使用了多少？谁使用多了吗？</li>
+</ul>
+<p>我们能从下面 <strong>kernel 日志</strong> 得到答案：</p>
+<figure class="highlight less"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs less"><span class="hljs-comment">//kernel log</span><br><span class="hljs-selector-attr">[2025-10-26 16:04:42.461520]</span> <span class="hljs-selector-attr">[ T5685]</span> <span class="hljs-selector-tag">binder_alloc</span>: <span class="hljs-number">1553</span>: <span class="hljs-selector-tag">binder_alloc_buf</span> <span class="hljs-selector-tag">size</span> <span class="hljs-number">59848</span> <span class="hljs-selector-tag">failed</span>, <span class="hljs-selector-tag">no</span> <span class="hljs-selector-tag">address</span> <span class="hljs-selector-tag">space</span><br><span class="hljs-selector-attr">[2025-10-26 16:04:42.461567]</span> <span class="hljs-selector-attr">[ T5685]</span> <span class="hljs-selector-tag">binder_alloc</span>: <span class="hljs-selector-tag">allocated</span>: <span class="hljs-number">1030824</span> (<span class="hljs-attribute">num</span>: <span class="hljs-number">2</span> <span class="hljs-attribute">largest</span>: <span class="hljs-number">970976</span>), <span class="hljs-selector-tag">free</span>: <span class="hljs-number">9560</span> (<span class="hljs-attribute">num</span>: <span class="hljs-number">1</span> <span class="hljs-attribute">largest</span>: <span class="hljs-number">9560</span>)<br><span class="hljs-selector-attr">[2025-10-26 16:04:42.461579]</span> <span class="hljs-selector-attr">[ T5685]</span> <span class="hljs-selector-tag">binder</span>: <span class="hljs-selector-tag">cannot</span> <span class="hljs-selector-tag">allocate</span> <span class="hljs-selector-tag">buffer</span>: <span class="hljs-selector-tag">no</span> <span class="hljs-selector-tag">space</span> <span class="hljs-selector-tag">left</span><br><span class="hljs-selector-attr">[2025-10-26 16:04:42.461632]</span> <span class="hljs-selector-attr">[ T5685]</span> <span class="hljs-selector-tag">binder</span>: <span class="hljs-number">32006</span>:<span class="hljs-number">5685</span> <span class="hljs-selector-tag">transaction</span> <span class="hljs-selector-tag">call</span> <span class="hljs-selector-tag">to</span> <span class="hljs-number">1553</span>:<span class="hljs-number">0</span> <span class="hljs-selector-tag">failed</span> <span class="hljs-number">253959940</span>/<span class="hljs-number">29201</span>/<span class="hljs-selector-tag">-28</span>, <span class="hljs-selector-tag">size</span> <span class="hljs-number">59848</span><span class="hljs-selector-tag">-0</span> <span class="hljs-selector-tag">line</span> <span class="hljs-number">3548</span><br></code></pre></td></tr></table></figure>
+<p>日志解析：<code>binder_alloc: allocated: 1030824 (num: 2 largest: 970976), free: 9560 (num: 1 largest: 9560)</code></p>
+<ul>
+<li>已经使用的 <strong>1030824B</strong>。</li>
+<li><strong>num</strong>：2。<strong>binder</strong> 驱动中 <strong>binder 内存</strong> 使用红黑树来管理，已经分配的（已使用）或者可用的（free 的）都使用一个红黑树来管理，这里的 2 其实就是代表 2 个红黑树的节点，代表着已经分配的 binder 内存分别有两个红黑树节点。</li>
+<li><strong>largest</strong>：<strong>970976</strong>，两个红黑树节点中最大内存的一个为 <strong>970976</strong>（单位 B）。</li>
+<li><code>free: 9560 (num: 1 largest: 9560)</code> 这里也一样，剩余 <strong>binder 内存</strong>：<code>9560B</code>。</li>
+</ul>
+<h4 id="3-1-总的-binder-内存是多少呢？"><a href="#3-1-总的-binder-内存是多少呢？" class="headerlink" title="3.1 总的 binder 内存是多少呢？"></a>3.1 总的 binder 内存是多少呢？</h4><ul>
+<li>使用的+剩余的&#x3D;1030824+9560&#x3D;1040384B&#x3D;1016KB&#x3D;1024KB-8K&#x3D;1M-2*PAGE_SIZE，这里就是进程映射的专属的一块供 binder 交互的物理内存大小。</li>
+</ul>
+<p><strong>为什么是 1M - 8KB</strong>？解释如下：</p>
+<blockquote>
+<p>Modify the binder to request 1M - 2 pages instead of 1M. The backing store in the kernel requires a guard page, so 1M allocations fragment memory very badly. Subtracting a couple of pages so that they fit in a power of two allows the kernel to make more efficient use of its virtual address space.</p>
+</blockquote>
+<h4 id="3-2-谁向-system-server-申请那么多内存呢？"><a href="#3-2-谁向-system-server-申请那么多内存呢？" class="headerlink" title="3.2 谁向 system_server 申请那么多内存呢？"></a>3.2 谁向 system_server 申请那么多内存呢？</h4><p>通过查找 log，<code>main log</code> 中可以发现如下 log：</p>
+<ul>
+<li><strong>13359</strong> 进程正在频繁每秒一次申请大的 <strong>binder 内存</strong>，内存超过 970KB。</li>
+</ul>
+<blockquote>
+<p>当应用进程使用了大的 binder 数据，在 binder 的代码中（<code>frameworks/native/libs/binder/BpBinder.cpp</code>）会进行监控，则会在 main log 中打印日志进行预警。</p>
+</blockquote>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><code class="hljs apache"> <span class="hljs-attribute">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">41</span>.<span class="hljs-number">510</span> <span class="hljs-number">13359</span> <span class="hljs-number">13359</span> W BpBinder: Large outgoing transaction of <span class="hljs-number">970816</span> bytes, interface descriptor , code <span class="hljs-number">7</span><br> <span class="hljs-attribute">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42</span>.<span class="hljs-number">508</span> <span class="hljs-number">13359</span> <span class="hljs-number">13359</span> W BpBinder: Large outgoing transaction of <span class="hljs-number">970920</span> bytes, interface descriptor , code <span class="hljs-number">7</span><br> <span class="hljs-attribute">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">43</span>.<span class="hljs-number">684</span> <span class="hljs-number">13359</span> <span class="hljs-number">13359</span> W BpBinder: Large outgoing transaction of <span class="hljs-number">971024</span> bytes, interface descriptor , code <span class="hljs-number">7</span><br> <span class="hljs-attribute">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">44</span>.<span class="hljs-number">683</span> <span class="hljs-number">13359</span> <span class="hljs-number">13359</span> W BpBinder: Large outgoing transaction of <span class="hljs-number">971128</span> bytes, interface descriptor , code <span class="hljs-number">7</span><br> <span class="hljs-attribute">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">45</span>.<span class="hljs-number">766</span> <span class="hljs-number">13359</span> <span class="hljs-number">13359</span> W BpBinder: Large outgoing transaction of <span class="hljs-number">971232</span> bytes, interface descriptor , code <span class="hljs-number">7</span><br> <span class="hljs-attribute">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">46</span>.<span class="hljs-number">567</span> <span class="hljs-number">13359</span> <span class="hljs-number">13359</span> W BpBinder: Large outgoing transaction of <span class="hljs-number">971336</span> bytes, interface descriptor , code <span class="hljs-number">7</span><br> <span class="hljs-attribute">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">47</span>.<span class="hljs-number">535</span> <span class="hljs-number">13359</span> <span class="hljs-number">13359</span> W BpBinder: Large outgoing transaction of <span class="hljs-number">971440</span> bytes, interface descriptor , code <span class="hljs-number">7</span><br> <span class="hljs-attribute">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">48</span>.<span class="hljs-number">636</span> <span class="hljs-number">13359</span> <span class="hljs-number">13359</span> W BpBinder: Large outgoing transaction of <span class="hljs-number">971544</span> bytes, interface descriptor , code <span class="hljs-number">7</span><br><br><br><br><span class="hljs-attribute">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42</span>.<span class="hljs-number">462</span> <span class="hljs-number">32006</span>  <span class="hljs-number">5685</span> E IPCThreadState: Binder transaction failure. id: <span class="hljs-number">253959940</span>, BR_*: <span class="hljs-number">29201</span>, error: -<span class="hljs-number">28</span> (No space left <span class="hljs-literal">on</span> device)<br><span class="hljs-attribute">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42</span>.<span class="hljs-number">463</span> <span class="hljs-number">32006</span>  <span class="hljs-number">5685</span> E JavaBinder: !!! FAILED BINDER TRANSACTION !!!  (parcel size = <span class="hljs-number">59848</span>)<br><span class="hljs-attribute">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42</span>.<span class="hljs-number">463</span>  <span class="hljs-number">1553</span>  <span class="hljs-number">2514</span> W ActivityManager: pid <span class="hljs-number">32006</span> com.android.settings sent binder code <span class="hljs-number">140</span> with flags <span class="hljs-number">2</span> to frozen apps and got error -<span class="hljs-number">2147483646</span><br><span class="hljs-attribute">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42</span>.<span class="hljs-number">476</span> <span class="hljs-number">32006</span>  <span class="hljs-number">5685</span> I ExceptionHandle: at android.app.LoadedApk$ReceiverDispatcher$Args.lambda$getRunnable$<span class="hljs-number">0</span>(LoadedApk.java:<span class="hljs-number">1859</span>)<br><span class="hljs-attribute">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42</span>.<span class="hljs-number">477</span> <span class="hljs-number">32006</span>  <span class="hljs-number">5685</span> I ExceptionHandle: at android.app.LoadedApk$ReceiverDispatcher$Args.$r8$lambda$mcNAAl1SQ4MyJPyDg8TJ2x2h0Rk(Unknown Source:<span class="hljs-number">0</span>)<br><span class="hljs-attribute">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42</span>.<span class="hljs-number">479</span> <span class="hljs-number">32006</span>  <span class="hljs-number">5685</span> I ExceptionHandle: at android.app.LoadedApk$ReceiverDispatcher$Args$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:<span class="hljs-number">0</span>)<br><span class="hljs-attribute">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42</span>.<span class="hljs-number">479</span> <span class="hljs-number">32006</span>  <span class="hljs-number">5685</span> I ExceptionHandle: at android.os.Handler.handleCallback(Handler.java:<span class="hljs-number">959</span>)<br><span class="hljs-attribute">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42</span>.<span class="hljs-number">479</span> <span class="hljs-number">32006</span>  <span class="hljs-number">5685</span> I ExceptionHandle: at android.os.Handler.dispatchMessage(Handler.java:<span class="hljs-number">100</span>)<br><span class="hljs-attribute">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42</span>.<span class="hljs-number">479</span> <span class="hljs-number">32006</span>  <span class="hljs-number">5685</span> I ExceptionHandle: at android.os.Looper.loopOnce(Looper.java:<span class="hljs-number">311</span>)<br><span class="hljs-attribute">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42</span>.<span class="hljs-number">479</span> <span class="hljs-number">32006</span>  <span class="hljs-number">5685</span> I ExceptionHandle: at android.os.Looper.loop(Looper.java:<span class="hljs-number">408</span>)<br><span class="hljs-attribute">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42</span>.<span class="hljs-number">479</span> <span class="hljs-number">32006</span>  <span class="hljs-number">5685</span> I ExceptionHandle: at android.os.HandlerThread.run(HandlerThread.java:<span class="hljs-number">85</span>)<br><span class="hljs-attribute">10</span>-<span class="hljs-number">26</span> <span class="hljs-number">16</span>:<span class="hljs-number">04</span>:<span class="hljs-number">42</span>.<span class="hljs-number">508</span> <span class="hljs-number">13359</span> <span class="hljs-number">13359</span> W BpBinder: Large outgoing transaction of <span class="hljs-number">970920</span> bytes, interface descriptor , code <span class="hljs-number">7</span><br></code></pre></td></tr></table></figure>
+
+<ul>
+<li>至此，问题已经较为清晰：<strong>13359</strong> 进程向 <strong>system_server</strong> 进行大的 binder 数据传输，内存&#x3D;970920B。根据对应时间点的 <strong>kernel log</strong>，可见已分配的 <strong>binder 内存</strong> 为 <strong>1,030,824B</strong>（其中包含 <strong>13359</strong> 进程分配的 <strong>970,920B</strong>），<strong>system_server</strong> 剩余可用 <strong>binder 内存</strong> 仅 <strong>9,560B</strong>。如果此时有其他进程申请超过 9,560B 的 <strong>binder buffer</strong>，就会报错。</li>
+</ul>
+<p>正如所见，Settings 进程尝试分配 59,848B（大于剩余的 9,560B），因此报错，并导致 crash。</p>
+<ul>
+<li>此时我们知道是 13359 进程频繁进行大内存 binder 交互，导致其他应用异常。</li>
+</ul>
+<p><strong>问题</strong>：如果还想知道 13359 进程（三方应用）频繁调用系统的哪个接口导致异常，该怎么办呢？<br><code>13359 W BpBinder: Large outgoing transaction of 971544 bytes, interface descriptor , code 7</code> 从这个 log 中，我们能知道接口的码是 <code>7</code>，但是 <code>interface descriptor</code> 没有打印出来，我们不知道是哪个 AIDL 文件中的接口，log 中也找不到其他踪迹。我们下面提供了一个弥补的方案：当传输的是大数据包的 binder 通信时，我们可以将堆栈打印出来。</p>
+<h3 id="4-监测方案"><a href="#4-监测方案" class="headerlink" title="4. 监测方案"></a>4. 监测方案</h3><p>这里我们无法得知 <strong>13359</strong> 进程频繁访问 <strong>system_server</strong> 的哪个接口，因为 <code>interface descriptor</code> 没有打印出来。那么当进行 <strong>binder</strong> 通信的时候，<strong>传输大数据的时候我们可否将调用栈打印出来</strong>，方便客户端进一步进行修改。下面将是一个可行的方案：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs cpp">+++ b/libs/binder/IPCThreadState.cpp<br>@@ <span class="hljs-number">-822</span>,<span class="hljs-number">7</span> <span class="hljs-number">+822</span>,<span class="hljs-number">16</span> @@ <span class="hljs-function"><span class="hljs-type">status_t</span> <span class="hljs-title">IPCThreadState::transact</span><span class="hljs-params">(<span class="hljs-type">int32_t</span> handle,</span></span><br><span class="hljs-params"><span class="hljs-function">         std::string message = logStream.str();</span></span><br><span class="hljs-params"><span class="hljs-function">         ALOGI(<span class="hljs-string">&quot;%s&quot;</span>, message.c_str());</span></span><br><span class="hljs-params"><span class="hljs-function">     &#125;</span></span><br><span class="hljs-params"><span class="hljs-function">-</span></span><br><span class="hljs-params"><span class="hljs-function">+    <span class="hljs-type">size_t</span> parcelSize = data.dataSize();</span></span><br><span class="hljs-params"><span class="hljs-function">+    <span class="hljs-keyword">if</span> (parcelSize &gt; <span class="hljs-number">200</span> * <span class="hljs-number">1024</span>) &#123; <span class="hljs-comment">// 200KB = 200*1024</span></span></span><br><span class="hljs-params"><span class="hljs-function">+        ALOGE(<span class="hljs-string">&quot;Large binder transact data: %zu bytes, handle: %d, code: %u&quot;</span>, parcelSize, handle, code);</span></span><br><span class="hljs-params"><span class="hljs-function">+        CallStack::logStack(<span class="hljs-string">&quot;Large binder transact data:&quot;</span>, CallStack::getCurrent(<span class="hljs-number">10</span>).get(),</span></span><br><span class="hljs-params"><span class="hljs-function">+           ANDROID_LOG_ERROR);</span></span><br><span class="hljs-params"><span class="hljs-function">+    &#125;</span></span><br><span class="hljs-params"><span class="hljs-function">     LOG_ONEWAY(<span class="hljs-string">&quot;&gt;&gt;&gt;&gt; SEND from pid %d uid %d %s&quot;</span>, getpid(), getuid(),</span></span><br><span class="hljs-params"><span class="hljs-function">         (flags &amp; TF_ONE_WAY) == <span class="hljs-number">0</span> ? <span class="hljs-string">&quot;READ REPLY&quot;</span> : <span class="hljs-string">&quot;ONE WAY&quot;</span>);</span></span><br><span class="hljs-params"><span class="hljs-function">     err = writeTransactionData(BC_TRANSACTION, flags, handle, code, data, <span class="hljs-literal">nullptr</span>);</span></span><br></code></pre></td></tr></table></figure>
+<p>日志如下：</p>
+<figure class="highlight haskell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs haskell"><span class="hljs-type">E</span> <span class="hljs-type">IPCThreadState</span>: <span class="hljs-type">Large</span> binder transact <span class="hljs-class"><span class="hljs-keyword">data</span>: 1056768 bytes, handle: 148, code: 1</span><br><span class="hljs-type">E</span> <span class="hljs-type">Large</span> binder transact <span class="hljs-class"><span class="hljs-keyword">data</span>::   #00 pc 000000000019469c  /product/priv-app/<span class="hljs-type">GmsCoreGo</span>/<span class="hljs-type">GmsCoreGo</span>.apk (<span class="hljs-title">com</span>.<span class="hljs-title">google</span>.<span class="hljs-title">android</span>.<span class="hljs-title">chimera</span>.<span class="hljs-type">IntentOperation</span>.<span class="hljs-title">onHandleIntent</span>)</span><br><span class="hljs-type">E</span> <span class="hljs-type">Large</span> binder transact <span class="hljs-class"><span class="hljs-keyword">data</span>::   #01 pc 000000000068a444  /apex/com.android.art/lib64/libart.so (<span class="hljs-title">nterp_helper</span>+3924) </span><br><span class="hljs-type">E</span> <span class="hljs-type">Large</span> binder transact <span class="hljs-class"><span class="hljs-keyword">data</span>::   #02 pc 00000000003160b8  /product/priv-app/<span class="hljs-type">GmsCoreGo</span>/<span class="hljs-type">GmsCoreGo</span>.apk (<span class="hljs-title">alnr</span>.<span class="hljs-title">onHandleIntent</span>+28)</span><br><span class="hljs-type">E</span> <span class="hljs-type">Large</span> binder transact <span class="hljs-class"><span class="hljs-keyword">data</span>::   #03 pc 0000000000017e7c  [anon_shmem:dalvik-jit-code-cache] (<span class="hljs-title">offset</span> 0<span class="hljs-title">x2000000</span>) (<span class="hljs-title">qod</span>.<span class="hljs-title">run</span>+604)</span><br><span class="hljs-type">E</span> <span class="hljs-type">Large</span> binder transact <span class="hljs-class"><span class="hljs-keyword">data</span>::   #04 pc 0000000000018874  [anon_shmem:dalvik-jit-code-cache] (<span class="hljs-title">offset</span> 0<span class="hljs-title">x2000000</span>) (<span class="hljs-title">qoc</span>.<span class="hljs-title">run</span>+820)</span><br><span class="hljs-type">E</span> <span class="hljs-type">Large</span> binder transact <span class="hljs-class"><span class="hljs-keyword">data</span>::   #05 pc 000000000068b2c4  /apex/com.android.art/lib64/libart.so (<span class="hljs-title">nterp_helper</span>+7636)</span><br><span class="hljs-type">E</span> <span class="hljs-type">Large</span> binder transact <span class="hljs-class"><span class="hljs-keyword">data</span>::   #06 pc 000000000029c2f0  /product/priv-app/<span class="hljs-type">GmsCoreGo</span>/<span class="hljs-type">GmsCoreGo</span>.apk (<span class="hljs-title">dsza</span>.<span class="hljs-title">run</span>+40)</span><br><span class="hljs-type">E</span> <span class="hljs-type">Large</span> binder transact <span class="hljs-class"><span class="hljs-keyword">data</span>::   #07 pc 0000000000215bf4  /system/framework/arm64/boot.oat (<span class="hljs-title">java</span>.<span class="hljs-title">util</span>.<span class="hljs-title">concurrent</span>.<span class="hljs-type">ThreadPoolExecutor</span>.<span class="hljs-title">runWorker</span>+676) </span><br><span class="hljs-type">E</span> <span class="hljs-type">Large</span> binder transact <span class="hljs-class"><span class="hljs-keyword">data</span>::   #08 pc 0000000000219b88  /system/framework/arm64/boot.oat (<span class="hljs-title">java</span>.<span class="hljs-title">util</span>.<span class="hljs-title">concurrent</span>.<span class="hljs-type">ThreadPoolExecutor</span>$<span class="hljs-type">Worker</span>.<span class="hljs-title">run</span>+56) </span><br><span class="hljs-type">E</span> <span class="hljs-type">Large</span> binder transact <span class="hljs-class"><span class="hljs-keyword">data</span>::   #09 pc 00000000000a9540  /system/framework/arm64/boot.oat (<span class="hljs-title">java</span>.<span class="hljs-title">lang</span>.<span class="hljs-type">Thread</span>.<span class="hljs-title">run</span>+64) </span><br><span class="hljs-type">E</span> <span class="hljs-type">Large</span> binder transact <span class="hljs-class"><span class="hljs-keyword">data</span>::   #10 pc 0000000000328194  /apex/com.android.art/lib64/libart.so (<span class="hljs-title">art_quick_invoke_stub</span>+612)</span><br><span class="hljs-type">E</span> <span class="hljs-type">Large</span> binder transact <span class="hljs-class"><span class="hljs-keyword">data</span>::   #11 pc 00000000002d9348  /apex/com.android.art/lib64/libart.so (<span class="hljs-title">art</span>::<span class="hljs-type">ArtMethod</span>::<span class="hljs-type">Invoke</span>(<span class="hljs-title">art</span>::<span class="hljs-type">Thread</span>*, <span class="hljs-title">unsigned</span> <span class="hljs-title">int</span>*, <span class="hljs-title">unsigned</span> <span class="hljs-title">int</span>, <span class="hljs-title">art</span>::<span class="hljs-type">JValue</span>*, <span class="hljs-title">char</span> <span class="hljs-title">const</span>*)+216)</span><br><span class="hljs-type">E</span> <span class="hljs-type">Large</span> binder transact <span class="hljs-class"><span class="hljs-keyword">data</span>::   #12 pc 0000000000421028  /apex/com.android.art/lib64/libart.so (<span class="hljs-title">art</span>::<span class="hljs-type">Thread</span>::<span class="hljs-type">CreateCallback</span>(<span class="hljs-title">void</span>*)+932) </span><br><span class="hljs-type">E</span> <span class="hljs-type">Large</span> binder transact <span class="hljs-class"><span class="hljs-keyword">data</span>::   #13 pc 0000000000420c74  /apex/com.android.art/lib64/libart.so (<span class="hljs-title">art</span>::<span class="hljs-type">Thread</span>::<span class="hljs-type">CreateCallbackWithUffdGc</span>(<span class="hljs-title">void</span>*)+8) </span><br><span class="hljs-type">E</span> <span class="hljs-type">Large</span> binder transact <span class="hljs-class"><span class="hljs-keyword">data</span>::   #14 pc 00000000000701c4  /apex/com.android.runtime/lib64/bionic/libc.so (<span class="hljs-title">__pthread_start</span>(<span class="hljs-title">void</span>*)+196) </span><br><span class="hljs-type">E</span> <span class="hljs-type">Large</span> binder transact <span class="hljs-class"><span class="hljs-keyword">data</span>::   #15 pc 0000000000061560  /apex/com.android.runtime/lib64/bionic/libc.so (<span class="hljs-title">__start_thread</span>+64) </span><br></code></pre></td></tr></table></figure>
+
+<h3 id="5-总结"><a href="#5-总结" class="headerlink" title="5. 总结"></a>5. 总结</h3><ul>
+<li>本文对该 Binder 内存异常问题进行了详细梳理。</li>
+<li>对常见的 Binder 日志进行了详细解读。</li>
+<li>针对大内存 Binder 交互，本文提供了一种监测方法。</li>
+</ul>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E9%97%AE%E9%A2%98%E8%AE%B0%E5%BD%95/" class="category-chain-item">问题记录</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/%E9%97%AE%E9%A2%98%E8%AE%B0%E5%BD%95/Binder/" class="category-chain-item">Binder</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93/" class="print-no-link">#问题总结</a>
+      
+        <a href="/tags/Binder/" class="print-no-link">#Binder</a>
+      
+    </div>
+  
+</div>
+
+
+              
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/02/04/15_crash%E5%92%8Cgdb%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8%E5%91%BD%E4%BB%A4/" title="crash和gdb基本使用命令">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">crash和gdb基本使用命令</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2025/09/02/2_watchdog_%E4%B8%8B/" title="Android system_server-watchdog机制介绍（下）">
+                        <span class="hidden-mobile">Android system_server-watchdog机制介绍（下）</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

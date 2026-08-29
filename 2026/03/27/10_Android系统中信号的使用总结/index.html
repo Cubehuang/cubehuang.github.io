@@ -1,0 +1,1211 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/site_icon.png">
+  <link rel="icon" href="/main_wallpapers/site_icon_2.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#37AFE1">
+  <meta name="author" content="CubeHuang">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="[TOC]在分析稳定性问题过程中常常需要和信号打交道，信号在Android系统中的运用颇多，在内核中也是一个很重要的模块。以下将我的学习记录归纳起来，便于后期查阅。    信号名称 信号值 信号在Android系统中的作用    SIGQUIT 3 调试信号，在Android 应用进程（包括system_server进程）中的Signal Catcher线程中使用，该线程会注册该信号，当该进程收到">
+<meta property="og:type" content="article">
+<meta property="og:title" content="信号在Android系统中的运用总结">
+<meta property="og:url" content="https://cubehuang.github.io/2026/03/27/10_Android%E7%B3%BB%E7%BB%9F%E4%B8%AD%E4%BF%A1%E5%8F%B7%E7%9A%84%E4%BD%BF%E7%94%A8%E6%80%BB%E7%BB%93/">
+<meta property="og:site_name" content="Cubehuang_blog">
+<meta property="og:description" content="[TOC]在分析稳定性问题过程中常常需要和信号打交道，信号在Android系统中的运用颇多，在内核中也是一个很重要的模块。以下将我的学习记录归纳起来，便于后期查阅。    信号名称 信号值 信号在Android系统中的作用    SIGQUIT 3 调试信号，在Android 应用进程（包括system_server进程）中的Signal Catcher线程中使用，该线程会注册该信号，当该进程收到">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/10_Android_signal_use/1_%E4%BF%A1%E5%8F%B7%E5%A4%84%E7%90%86%E5%87%BD%E6%95%B0%E7%9A%84%E6%B3%A8%E5%86%8C.svg">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/10_Android_signal_use/2_kill_-9_system_server_send.svg">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/10_Android_signal_use/3_%E4%B8%BB%E7%BA%BF%E7%A8%8B%E5%AF%B9SIGKILL%E7%9A%84%E5%A4%84%E7%90%86.svg">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/10_Android_signal_use/4_%E5%AD%90%E7%BA%BF%E7%A8%8B%E5%AF%B9%E4%BA%8ESIGKILL%E7%9A%84%E5%A4%84%E7%90%86.svg">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/10_Android_signal_use/5_zygote%E5%AF%B9%E4%BA%8E%E5%AD%90%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%A4%84%E7%90%86.svg">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/10_Android_signal_use/6_system_server%E8%BF%9B%E7%A8%8B%E9%80%80%E5%87%BA%E5%AE%8C%E6%95%B4%E5%9B%BE.svg">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/10_Android_signal_use/7_NE_%E4%BF%A1%E5%8F%B7%E5%A4%84%E7%90%86%E5%87%BD%E6%95%B0%E6%B5%81%E7%A8%8B%E6%97%B6%E5%BA%8F%E5%9B%BE.svg">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/10_Android_signal_use/8_ANR_XX_dump%E6%B5%81%E7%A8%8B.svg">
+<meta property="article:published_time" content="2026-03-27T08:40:40.000Z">
+<meta property="article:modified_time" content="2026-05-29T15:33:44.000Z">
+<meta property="article:author" content="CubeHuang">
+<meta property="article:tag" content="Signal">
+<meta property="article:tag" content="系统概念原理">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://cubehuang.github.io/blog_imgs/10_Android_signal_use/1_%E4%BF%A1%E5%8F%B7%E5%A4%84%E7%90%86%E5%87%BD%E6%95%B0%E7%9A%84%E6%B3%A8%E5%86%8C.svg">
+  
+  
+  
+  <title>信号在Android系统中的运用总结 - Cubehuang_blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"cubehuang.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":["home","post","category","about","links","archive"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"left","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>CubeHuang</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/main_wallpapers/wp_1.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="信号在Android系统中的运用总结"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-03-27 16:40" pubdate>
+          2026年3月27日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          28k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          232 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="padding-left: 2rem; margin-right: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">信号在Android系统中的运用总结</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>[TOC]<br>在分析稳定性问题过程中常常需要和信号打交道，信号在Android系统中的运用颇多，在内核中也是一个很重要的模块。以下将我的学习记录归纳起来，便于后期查阅。</p>
+<table>
+<thead>
+<tr>
+<th>信号名称</th>
+<th>信号值</th>
+<th>信号在Android系统中的作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SIGQUIT</td>
+<td>3</td>
+<td>调试信号，在Android 应用进程（包括<strong>system_server</strong>进程）中的<code>Signal Catcher</code>线程中使用，该线程会注册该信号，当该进程收到该信号时候，该信号将由<code>Signal Catcher</code>线程处理，<code>Signal Catcher</code>线程将会 <code>dump</code> 该进程的堆栈信息（类加载信息，JIT信息等等）存储到<code>data/anr/trace_XX.txt</code>文件中，anr_时间.txt 文件也是通过该信号得到的</td>
+</tr>
+<tr>
+<td>SIGILL</td>
+<td>4</td>
+<td>非法指令，沿用Linux，常见于DDR&#x2F;CPU器件不稳定、so库和系统架构不兼容、so库损坏。<strong>是Android系统中进程异常退出的信号之一</strong></td>
+</tr>
+<tr>
+<td>SIGTRAP</td>
+<td>5</td>
+<td>通常调试使用，例如我们的AS 实时给进程断点使用到该信号</td>
+</tr>
+<tr>
+<td>SIGABRT</td>
+<td>6</td>
+<td>异常终止，进程的主动行为，常见，例如我们进程进入不正常的状态，我们可以使用该信号，进行退出。<strong>是Android系统中进程异常退出的信号之一</strong></td>
+</tr>
+<tr>
+<td>SIGBUS</td>
+<td>7</td>
+<td>总线&#x2F;地址对齐等错误，常见于DDR&#x2F;CPU器件不稳定，<strong>是Android系统中进程异常退出的信号之一</strong></td>
+</tr>
+<tr>
+<td>SIGFPE</td>
+<td>8</td>
+<td>浮点异常，较少见，<strong>是Android系统中进程异常退出的信号之一</strong></td>
+</tr>
+<tr>
+<td>SIGKILL</td>
+<td>9</td>
+<td>进程退出信号，常见杀死进程，system_server，lmkd，init进程常用于杀死异常进程</td>
+</tr>
+<tr>
+<td>SIGUSR1</td>
+<td>10</td>
+<td>在Android 应用进程（包括system_server进程）中的<code>Signal Catcher</code>线程中使用，进程收到该信号会进行强制GC一次</td>
+</tr>
+<tr>
+<td>SIGSEGV</td>
+<td>11</td>
+<td>段错误&#x2F;非法内存访问，很常见，空指针的NE，<strong>是Android系统中进程异常退出的信号之一</strong></td>
+</tr>
+<tr>
+<td>SIGSTKFLT</td>
+<td>16</td>
+<td>全称：stack fault，栈错误，不常见，<strong>是Android系统中进程异常退出的信号之一</strong></td>
+</tr>
+<tr>
+<td>SIGCHLD</td>
+<td>17</td>
+<td>子进程状态改变，init进程，zygote进程中使用，监听子进程退出信息</td>
+</tr>
+<tr>
+<td>SIGCONT</td>
+<td>18</td>
+<td>继续执行已停止的进程，和SIGSTOP配对使用，ptrace 功能结合使用——NE dump流程中频繁使用</td>
+</tr>
+<tr>
+<td>SIGSTOP</td>
+<td>19</td>
+<td>停止进程，和SIGCONT配对使用，ptrace 功能结合使用——NE dump流程中频繁使用</td>
+</tr>
+<tr>
+<td>SIGSYS</td>
+<td>31</td>
+<td>非法系统调用，不常见，<strong>是Android系统中进程异常退出的信号之一</strong></td>
+</tr>
+<tr>
+<td>BIONIC_SIGNAL_DEBUGGER</td>
+<td>35</td>
+<td>debuggerd调试信号，进程不退出，常用于打印tombstone信息，文件存储在data&#x2F;tombstones&#x2F;tombstone_x.txt中</td>
+</tr>
+<tr>
+<td>BIONIC_SIGNAL_PROFILER</td>
+<td>38</td>
+<td>性能采样工具使用，perfetto用于分析性能malloc堆信息使用</td>
+</tr>
+<tr>
+<td>BIONIC_SIGNAL_FDTRACK</td>
+<td>39</td>
+<td>监测进程fd泄漏使用，debug版本才开启</td>
+</tr>
+<tr>
+<td><strong>使用概况</strong>：</td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<ul>
+<li><strong>1.Android系统中进程异常退出的信号</strong>：<code>SIGILL-4</code>、<code>SIGABRT-6</code>、<code>SIGBUS-7</code>、<code>SIGFPE-8</code>、<code>SIGSEGV-11</code>、<code>SIGSTKFLT-16</code>、<code>SIGSYS-31</code>。进程凡是收到这些信号均会退出，并且有<code>tombstone</code>产生。也就是我们稳定性中常说的 NE 问题；</li>
+<li><strong>2.调试信号</strong>：<code>SIGQUIT-3</code> 和 <code>BIONIC_SIGNAL_DEBUGGER-35</code>，我认为他们都可以称为调试信号，可以提供研发作为调试，随时打印出进程的堆栈信息。<strong>SWT</strong>和<strong>ANR</strong> 中的<strong>anr_XX.txt</strong> 文件主要通过 <code>SIGQUIT-3</code> 该信号触发而来。而NE问题中的<strong>tombstone</strong>文件 主要通过<code>BIONIC_SIGNAL_DEBUGGER-35</code> 信号触发产生；</li>
+<li><strong>3.杀进程信号</strong>：<code>SIGKILL-9</code>，通过<code>kill -9 PID</code> 杀死进程；</li>
+<li><strong>4.子进程状态监听信号</strong>：<code>SIGCHLD-17</code>，这是Android系统重启链条中的重要信号。</li>
+<li><strong>5.其他功能信号</strong></li>
+</ul>
+<hr>
+<p>在Linux中信号是属于软中断的一种，是一种<strong>异步通知&#x2F;进程控制机制</strong>。如果信号是从一个进程发送给另外一个进程的角度来看，信号是作为一种最简单的IPC方式。<br>信号作为通知方式的一种，即：我们得到通知，通知我们做一些什么事情？<br>从代码层面来讲：我们要先做监听。<br>即：哪些通知&#x2F;信号是我们需要监听的？<br>——信号的注册。<br>我们能监听信号后，每种信号通知我们需要做哪些事情？<br>——信号处理函数<br>信号的注册：信号+信号处理函数。<br>在内核的<code>task_struct</code>中和信号相关的成员主要有：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs c">  <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">signal_struct</span>           *<span class="hljs-title">signal</span>;</span><span class="hljs-comment">//线程组共享的信号结构体，信号相关的绝大部分信息均存于此结构，所有线程组内线程共享</span><br>   <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">sighand_struct</span> __<span class="hljs-title">rcu</span>      *<span class="hljs-title">sighand</span>;</span><span class="hljs-comment">//线程组共享，存放信号的对应的信号处理函数</span><br>   <span class="hljs-type">sigset_t</span>                      blocked;<span class="hljs-comment">//线程私有，代表该线程暂时被阻塞的信号，放入pending中排队，例如我们常说SIGKILL信号不可屏蔽，指的就是这里从右往左第8位为1</span><br>  <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">sigpending</span>               <span class="hljs-title">pending</span>;</span><span class="hljs-comment">// 线程私有，存放是针对本线程的信号（非线程组共享），信号队列，如果该信号已经被该线程阻塞了，需要放在 pending 中排队，我们通过该字段可以得知，该线程还有哪些信号还未处理</span><br></code></pre></td></tr></table></figure>
+<h2 id="1-NE问题tombstone机制信号的使用"><a href="#1-NE问题tombstone机制信号的使用" class="headerlink" title="1. NE问题tombstone机制信号的使用"></a>1. NE问题tombstone机制信号的使用</h2><blockquote>
+<p>SIGILL 4、SIGTRAP 5、SIGABRT 6、 SIGBUS 7、 SIGFPE 8、 SIGSEGV 11、 SIGSTKFLT 16、 SIGSYS 31、 BIONIC_SIGNAL_DEBUGGER 35</p>
+</blockquote>
+<p> * <strong>Android系统中进程异常退出的信号</strong>：<code>SIGILL-4</code>、<code>SIGABRT-6</code>、<code>SIGBUS-7</code>、<code>SIGFPE-8</code>、<code>SIGSEGV-11</code>、<code>SIGSTKFLT-16</code>、<code>SIGSYS-31</code>。进程凡是收到这些信号均会退出，并且有<code>tombstone</code>产生。也就是我们稳定性中常说的 NE 问题。</p>
+<h3 id="1-1-问题：为什么需要tombstone？"><a href="#1-1-问题：为什么需要tombstone？" class="headerlink" title="1.1 问题：为什么需要tombstone？"></a>1.1 问题：为什么需要tombstone？</h3><ol>
+<li>对于以上的信号，对于应用进程来说均是致命的。传统的Linux内核中进程遇到上述异常依靠<strong>gdb core</strong> + <strong>symbol</strong> 离线调试的情况，可以尽可能还原问题的场景，分析到异常的原因。但是前提是需要dump出<strong>core</strong>文件，保存<strong>symbols</strong>。core文件是比较大的，普通的core文件都有几百M，对于电脑这种大存储的计算机来说，容量上时充足的，但是对于Android这种小存储的机器上来说没有那么适用，当然有人反驳现在手机内存也达到了1T，也很充足。但想一下当手机中的进程出现异常，谁也不想异常的log文件占用手机过多的存储空间——<strong>core文件存储空间大</strong>；</li>
+<li>传统的<code>gdb + core + symbol</code> 的调试方式，比较考验工程师的熟悉程度，操作起来可能比较麻烦和困难——<strong>gdb工具排查复杂</strong>；</li>
+<li>而且对于普通的问题例如，常规的空指针等问题，我们只需要代码的调用路径可能结合代码就能分析出问题原因 ——<strong>普通问题并不需要core文件分析</strong>。<br>所以<strong>tombstone</strong>文件产生，我们将传统<strong>core</strong>文件中的关键信息从进程中抽取出来，使其轻量化，能涵盖大部分问题，容易看懂，组合成一个新的文本文件。</li>
+</ol>
+<h3 id="1-2-为了生成tombstone文件，我们首先做什么？"><a href="#1-2-为了生成tombstone文件，我们首先做什么？" class="headerlink" title="1.2 为了生成tombstone文件，我们首先做什么？"></a>1.2 为了生成tombstone文件，我们首先做什么？</h3><p>根据前面的介绍，我们要在用户态监听各个异常信号，给其对应的处理函数帮我们抽取关键信息到<strong>tombstone</strong>文件中。</p>
+<h3 id="1-3-如何监听？——信号注册"><a href="#1-3-如何监听？——信号注册" class="headerlink" title="1.3 如何监听？——信号注册"></a>1.3 如何监听？——信号注册</h3><p>所有用户态的进程都需要注册，那么我们要看一下用户态的进程有哪些？</p>
+<ul>
+<li>第一类-<code>zygote</code>进程<code>fork</code>而来：<strong>应用进程</strong>，<strong>system_server进程</strong>；</li>
+<li>第二类-<code>init</code>执行<code>fork+exec(bin文件)</code>而来：zygote，lmkd，surfaceflinger，camerahalserver等<strong>Native进程</strong>；</li>
+<li>第三类-上述两类 <code>fork+exec()或者fork</code> 得来的进程：例如crash_dump等进程。<br>信号注册的本质：信号+信号处理函数保留在线程task.sighand.action[64]的数组中，<strong>数组下标+1</strong> 代表该信号，<code>sa_handler</code> 存放该信号处理函数的地址。<br>举例：</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs c">  action = &#123;&#123;<br>      sa = &#123;<br>        sa_handler = <span class="hljs-number">0xffffff809fb20800</span>,<br>        sa_flags = <span class="hljs-number">18446743526632982528</span>,<br>        sa_restorer = <span class="hljs-number">0x0</span>,<br>        sa_mask = &#123;<br>          sig = &#123;<span class="hljs-number">489491726336</span>&#125;<br>        &#125;<br>      &#125;<br>    &#125;, &#123;<br>      sa = &#123;<br>        sa_handler = <span class="hljs-number">0x8000</span>,<br>        sa_flags = <span class="hljs-number">0</span>,<br>        sa_restorer = <span class="hljs-number">0x0</span>,<br>        sa_mask = &#123;<br>          sig = &#123;<span class="hljs-number">0</span>&#125;<br>        &#125;<br>      &#125;<br>    &#125;, &#123;<br>      sa = &#123;<br>        sa_handler = <span class="hljs-number">0xffffffffffffffff</span>,<br>        sa_flags = <span class="hljs-number">4294967298</span>,<br>        sa_restorer = <span class="hljs-number">0xffffff81ea19a500</span>,<br>        sa_mask = &#123;<br>          sig = &#123;<span class="hljs-number">4</span>&#125;<br>        &#125;<br>      &#125;<br>    &#125;<br>    ...<br>  &#125;<br></code></pre></td></tr></table></figure>
+<p>注意：<strong>sighand</strong> 在进程fork的场景是具有继承性的，即：<strong>父进程的sighand会复制传给子进程</strong>，但是在fork+exec的场景，exec会清空<code>sa_handler</code>，设置为默认<code>SIG_DFL</code>。<br>所以针对这一情况，我们要理解一下几点：</p>
+<ol>
+<li><strong>zygote的子进程</strong>（system_server，app）的sighand 来源于<strong>zygote父进程</strong>复制而来；</li>
+<li><code>zygote</code>，<code>lmkd</code>，<code>surfaceflinger</code> 等<strong>native进程</strong>的<strong>sighand</strong>来源自身的注册。<br>注册流程如下：<strong>debuggerd_signal_handler</strong> 作为信号处理函数，<strong>内核接口</strong>：<code>do_sigaction</code></li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs c"> /bionic/linker/arch/arm64/begin.S<br> |-&gt;__linker_init() [/bionic/linker/linker_main.cpp]<br>    |-&gt;__linker_init_post_relocation() [..]<br>       |-&gt;linker_main()<br>          |-&gt;linker_debuggerd_init()          [linker/linker_debuggerd_android.cpp]<br>             |-&gt;debuggerd_init()              [debuggerd/handler/debuggerd_handler.cpp]<br>                |-&gt;debuggerd_register_handlers(&amp;action)      [debuggerd/include/debuggerd/handler.h]<br>                   |-&gt;sigaction(每个信号, &amp;action, nullptr)<br>                      |-&gt;__rt_sigaction()                    [bionic/libc/bionic/sigaction.cpp]<br>                         |-&gt;syscall(__NR_rt_sigaction, ...)<br>                            |-&gt;do_sigaction()                [kernel<span class="hljs-number">-6.6</span>/kernel/signal.c]<br>                               |-&gt; *k = *act;  k = &amp;p-&gt;sighand-&gt;action[sig<span class="hljs-number">-1</span>]<br></code></pre></td></tr></table></figure>
+<p><img src="/blog_imgs/10_Android_signal_use/1_%E4%BF%A1%E5%8F%B7%E5%A4%84%E7%90%86%E5%87%BD%E6%95%B0%E7%9A%84%E6%B3%A8%E5%86%8C.svg" srcset="/img/loading.gif" lazyload alt="b2bd2a9af9d2bd7903491525318e23e7.svg+xml"><br>图片说明：</p>
+<ol>
+<li>用户态信号处理函数注册;</li>
+<li>注册 <code>debuggerd_signal_handler</code> 处理函数监测下面这几个信号值：SIGILL 4、SIGTRAP 5、SIGABRT 6、 SIGBUS 7、 SIGFPE 8、 SIGSEGV 11、 SIGSTKFLT 16、 SIGSYS 31、 BIONIC_SIGNAL_DEBUGGER 35;<blockquote>
+<p>补充：BIONIC_SIGNAL_DEBUGGER 35 虽然不是异常信号，当我们debug 进程问题，尤其想查看native进程堆栈信息，可以kill 35 PID 给进程发送35信号，产生tombstone文件包含进程堆栈。这给我们程序员一个调试的机会，并且进程不会退出。</p>
+</blockquote>
+</li>
+</ol>
+<p>那么以上就是信号的注册，主要完成的就是：将信号处理函数注册到内核中，当信号到来时候，可以让用户态进程中的信号处理函数可以执行对应功能，例如如上就是产生tombstone日志信息，给程序员分析解决异常。<br><strong>调用接口</strong>：<br>1.do_sigaction 注册信号+信号处理函数<br>那么除了上述往内核中注册信号处理函数的方式，还有没有其他监测信号的方法呢？</p>
+<blockquote>
+<p>有</p>
+</blockquote>
+<h2 id="2-ANR-SWT机制中信号的使用"><a href="#2-ANR-SWT机制中信号的使用" class="headerlink" title="2. ANR&#x2F;SWT机制中信号的使用"></a>2. ANR&#x2F;SWT机制中信号的使用</h2><blockquote>
+<p>SIGQUIT-3</p>
+</blockquote>
+<h3 id="2-1-引入介绍"><a href="#2-1-引入介绍" class="headerlink" title="2.1 引入介绍"></a>2.1 引入介绍</h3><p>上文中<strong>tombstone-NE</strong>机制弥补传统<code>core</code>文件分析问题的不足，在Android system_server进程中构建了一个监测system_server进程，和应用进程是否运行良好的机制分别是：</p>
+<ul>
+<li>监测 <code>system_server</code> 运行是否正常——<strong>SWT</strong>（system_server watchdog timeout）</li>
+<li>监测应用进程运行是否正常——<strong>ANR</strong>（<code>application not responding</code>）<br>当两种进程出现运行异常时候，我们迫切需要得到进程的堆栈信息，根据前文NE的机制来看我们可以向目标进程发送<code>sig 35</code> 就可以得到<code>tombstone</code>得到堆栈，可以但是针对性不强，<strong>tombstone</strong> 既用于致命信号场景，也可由调试信号触发；与 <strong>ANR trace</strong> 的主要差异在信息侧重点与触发链路。<br>所以我们要重新设计一套单独的尝试采集信息的机制，区别于<code>tombstone</code>。我们不再向<code>tombstone</code>机制中一样，注册信号和信号处理函数的方式实现，而是开启一个单独的线程去不断获取进程信号值方式来实现。如下两点：</li>
+<li>1.引入 <code>SIGQUIT-3</code> 信号，作为监控信号</li>
+<li>2.引入一个新线程 <code>Signal Catcher</code>，作为监控线程<br><code>Signal Catcher</code> 这个线程大家是不是很眼熟，是的它的作用就是上述的那样，当进程收到 <code>SIGQUIT-3</code>信号，<code>Signal Catcher</code> 就能监控到从而生成对应堆栈文件（文件可能是<code>data/anr/trace_XX</code>或者<code>data/anr/anr_XX</code>）</li>
+</ul>
+<h3 id="2-2-Signal-Catcher-线程的监控逻辑——轮询"><a href="#2-2-Signal-Catcher-线程的监控逻辑——轮询" class="headerlink" title="2.2 Signal Catcher 线程的监控逻辑——轮询"></a>2.2 Signal Catcher 线程的监控逻辑——轮询</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-comment">//art/runtime/signal_catcher.cc</span><br>signals.<span class="hljs-built_in">Add</span>(SIGQUIT);<br>signals.<span class="hljs-built_in">Add</span>(SIGUSR1)<br></code></pre></td></tr></table></figure>
+<p>调用下面函数循环监控上面两个信号值，<strong>内核接口</strong>：<code>rt_sigtimedwait</code></p>
+<ul>
+<li>从当前task的 <code>pending</code> 取信号，</li>
+<li>如果取不到从线程组共享的信号字段中取<code>signal-&gt;shared_pending</code>。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs c">sigwait--用户态<br>   |-&gt;rt_sigtimedwait--内核态<br>      |-&gt;do_sigtimedwait<br>         |-&gt;dequeue_signal<span class="hljs-comment">// 从当前task的pending取信号，如果取不到从线程组共享的信号字段中取signal-&gt;shared_pending</span><br></code></pre></td></tr></table></figure>
+<p>从上面代码我们看到除了<strong>SIGQUIT-3</strong>，还监控了<strong>SIGUSR1-10</strong>信号，在art中依据内核接口<code>rt_sigtimedwait</code>构建了一个监测信号的框架（<code>art/runtime/signal_set.h </code>），<strong>SIGUSR1-10</strong>信号主要的作用是art对热点代码进行编译优化功能引入的，对进程使用该信号可触发对该进程进行强制GC一次</p>
+<blockquote>
+<p>在调试应用进程情况下，可使用kill -3 PID 快速得到进程的堆栈，路径：data&#x2F;anr&#x2F;trace_xx</p>
+</blockquote>
+<ul>
+<li><strong>调用接口</strong>：<strong>sigwait</strong> 循环遍历获取进程信号</li>
+</ul>
+<h2 id="3-Android重启流程中信号的使用"><a href="#3-Android重启流程中信号的使用" class="headerlink" title="3. Android重启流程中信号的使用"></a>3. Android重启流程中信号的使用</h2><blockquote>
+<p>SIGCHLD-17</p>
+</blockquote>
+<p>我们在Android系统开发过程中，不可避免的会遇到重启问题。在稳定性中我们经常谈论的是两种重启：1.上层重启&#x2F;软重启，2.整机重启&#x2F;内核重启。<br>在上层重启中，信号扮演着重要的作用。我们知道在进程启动的流程中，进程的创建情况如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs c">init<br>   |-&gt;netd<br>   |-&gt;surfaceflinger<br>   |-&gt;servicemanager<br>   |-&gt;lmkd<br>   |-&gt;...Native进程<br>   |-&gt;zygote<br>      |-&gt;system_server<br>      |-&gt;APP..<br></code></pre></td></tr></table></figure>
+<p>上层重启通常指的是<strong>zygote&#x2F;system_server</strong>重启。<br>通常有下面两类情况：</p>
+<ol>
+<li><strong>system_server</strong>异常，进程退出，zygote监测到system_server进程退出，zygote自杀，init进程监测到zygote进程退出，杀掉zygote进程组中的所有进程（包括zygote，zygote fork的app进程们）。init进程中会根据rc中<code>onrestart restart</code> 链路关系重启相关进程，<strong>zygote</strong>进程会重启。</li>
+<li>在init进程中会监测子进程的退出情况，如果rc文件中包含<code>onrestart restart **zygote**</code> 相关的进程出现异常重启，也会导致 <code>zygote</code> 进程重启。这样的进程有：<code>netd</code>，<code>surfaceflinger</code>，当然这是最直接的情况：<code>netd</code>，<code>surfaceflinger</code> 异常导致<code>zygote</code>重启。还存在间接的情况：有进程的<strong>rc</strong>中存在 <code>onrestart restart surfaceflinger</code>，该进程异常会导致<code>SF</code>重启，<code>SF</code>重启会导致<code>zygote</code>重启，这样的进程有<code>android.hardware.graphics.composer@X.X-service</code>。</li>
+</ol>
+<p><strong>问题</strong>：zygote和init进程如何监控子进程的运行情况？</p>
+<blockquote>
+<p>用<strong>SIGCHLD-17</strong>结合<strong>waitpid</strong>接口能监控到子进程的运行情况</p>
+</blockquote>
+<h3 id="3-1-zygote中如何监测？"><a href="#3-1-zygote中如何监测？" class="headerlink" title="3.1 zygote中如何监测？"></a>3.1 zygote中如何监测？</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-comment">//zygote：com_android_internal_os_Zygote.cpp</span><br><span class="hljs-type">static</span> <span class="hljs-type">void</span> <span class="hljs-title function_">SetSignalHandlers</span><span class="hljs-params">()</span> &#123;<br>    <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">sigaction</span> <span class="hljs-title">sig_chld</span> =</span> &#123;.sa_flags = SA_SIGINFO, .sa_sigaction = SigChldHandler&#125;;<br>    <span class="hljs-keyword">if</span> (sigaction(SIGCHLD, &amp;sig_chld, nullptr) &lt; <span class="hljs-number">0</span>) &#123;<br>        ALOGW(<span class="hljs-string">&quot;Error setting SIGCHLD handler: %s&quot;</span>, strerror(errno));<br>    &#125;<br>    ...<br>&#125;<br><span class="hljs-comment">//信号处理函数</span><br><span class="hljs-type">static</span> <span class="hljs-type">void</span> <span class="hljs-title function_">SigChldHandler</span><span class="hljs-params">(<span class="hljs-type">int</span> <span class="hljs-comment">/*signal_number*/</span>, <span class="hljs-type">siginfo_t</span>* info, <span class="hljs-type">void</span>* <span class="hljs-comment">/*ucontext*/</span>)</span> &#123;<br>...<br>    <span class="hljs-keyword">while</span> ((pid = waitpid(<span class="hljs-number">-1</span>, &amp;status, WNOHANG)) &gt; <span class="hljs-number">0</span>) &#123;<br>          ....<br>         <span class="hljs-keyword">if</span> (pid == gSystemServerPid) &#123;<br>            async_safe_format_log(ANDROID_LOG_ERROR, LOG_TAG,<br>                                  <span class="hljs-string">&quot;Exit zygote because system server (pid %d) has terminated&quot;</span>, pid);<br>            kill(getpid(), SIGKILL);<span class="hljs-comment">//kill 自身</span><br>        &#125;<br>    &#125;<br>...<br>&#125;<br></code></pre></td></tr></table></figure>
+<p><strong>zygote</strong> 中注册 <strong>SigChldHandler</strong> 为 <strong>SIGCHLD-17</strong> 信号的信号处理函数，当子进程（<strong>system_server</strong>，<strong>app进程</strong>）退出时候，内核中会向父进程<strong>zygote</strong>发送 <code>SIGCHLD-17</code> 信号，<strong>SigChldHandler</strong>信号处理函数得以使用<code>waitpid</code> 函数监控，返回退出进程的<code>pid</code>，如果<code>pid</code>是<code>system_server</code>进程的话，<code>zygote</code>进程会自杀，从而<code>zygote</code>进程退出。<br><strong>内核接口</strong>：</p>
+<ul>
+<li>1.<code>do_sigaction</code>：信号处理函数注册</li>
+<li>2.<code>waitpid</code>：读取子进程退出情况，这个函数很重要后面会再次介绍</li>
+</ul>
+<blockquote>
+<p>补充一个问题：在zygote中注册SIGCHLD-17，那么fork的子进程岂不是也会继承到该信号的注册？<br>是的正常来说子进程也会存在，但是在zygote的fork子进程代码处理逻辑里面添加 UnsetChldSignalHandler 作用：子进程中该信号的信号处理函数被设置为”sa.sa_handler &#x3D; SIG_DFL” 默认了</p>
+</blockquote>
+<h3 id="3-2-init中如何监测？"><a href="#3-2-init中如何监测？" class="headerlink" title="3.2 init中如何监测？"></a>3.2 init中如何监测？</h3><p>在init进程中使用<code>SIGCHLD-17</code> 信号监听子进程情况和zygote监听方法并不相同。<br>由于代码稍多，这里将大体原理先讲清楚：init 侧是“SIGCHLD 经 signalfd 转为 fd 可读事件”，再由 epoll 回调中调用 waitpid 回收子进程；但是并不是将信号处理函数通过<code>do_sigaction</code>注册到内核中，而是采用事件驱动方式（epoll 监听 signalfd 可读事件），但也不像<code>Signal Catcher</code>中使用的方式<br>而是通过<strong>epoll</strong> 将信号和fd监测结合起来。<br>总体来看三点：</p>
+<ol>
+<li>epoll fd+信号 组合；</li>
+<li><code>SIGCHLD-17</code>信号；</li>
+<li>信号处理函数调用<code>waitpid</code>。</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-number">1.</span>epoll需要fd：fd和信号结合起来；<br><span class="hljs-number">2.</span>“信号处理函数”注册到epoll中；<br><span class="hljs-number">3.</span>信号处理函数调用waitpid；<br>------------------------<br><span class="hljs-number">1.</span>epoll需要fd：fd和信号结合起来。<br><span class="hljs-comment">//system/core/init/service.cpp</span><br><span class="hljs-comment">// Must be called BEFORE any threads are created. See also the sigprocmask() man page.</span><br>unique_fd <span class="hljs-title function_">Service::CreateSigchldFd</span><span class="hljs-params">()</span> &#123;<br>    <span class="hljs-type">sigset_t</span> mask;<br>    sigemptyset(&amp;mask);<br>    sigaddset(&amp;mask, SIGCHLD);<br>    <span class="hljs-keyword">if</span> (sigprocmask(SIG_BLOCK, &amp;mask, nullptr) &lt; <span class="hljs-number">0</span>) &#123;<span class="hljs-comment">//---内核接口：sigprocmask 将 SIGCHLD 加入当前线程的 blocked mask，代表暂时屏蔽</span><br>        PLOG(FATAL) &lt;&lt; <span class="hljs-string">&quot;Failed to block SIGCHLD&quot;</span>;<br>    &#125;<br>    <span class="hljs-keyword">return</span> unique_fd(signalfd(<span class="hljs-number">-1</span>, &amp;mask, SFD_CLOEXEC));<span class="hljs-comment">//--内核接口：signalfd 收到信号时候将信号写入fd中，当read fd时候会调用到 dequeue_signal 取进程中的信号</span><br>&#125;<br><span class="hljs-comment">// CreateSigchldFd</span><br>    <span class="hljs-type">static</span> <span class="hljs-type">int</span> <span class="hljs-title function_">GetSigchldFd</span><span class="hljs-params">()</span> &#123;<br>        <span class="hljs-type">static</span> <span class="hljs-type">int</span> sigchld_fd = CreateSigchldFd().release();<br>        <span class="hljs-keyword">return</span> sigchld_fd;<br>    &#125;<br><span class="hljs-number">2.</span>“信号处理函数”注册到epoll中<br><span class="hljs-comment">//system/core/init/init.cpp</span><br><span class="hljs-type">static</span> <span class="hljs-type">void</span> <span class="hljs-title function_">InstallSignalFdHandler</span><span class="hljs-params">(Epoll* epoll)</span> &#123;<br>    ...<br>    Result&lt;<span class="hljs-type">void</span>&gt; cs_result = RegisterSignalFd(epoll, SIGCHLD, Service::GetSigchldFd());<span class="hljs-comment">//“信号处理函数”注册</span><br>    ...<br>&#125;<br><span class="hljs-comment">//RegisterSignalFd</span><br><span class="hljs-type">static</span> Result&lt;<span class="hljs-type">void</span>&gt; <span class="hljs-title function_">RegisterSignalFd</span><span class="hljs-params">(Epoll* epoll, <span class="hljs-type">int</span> signal, <span class="hljs-type">int</span> fd)</span> &#123;<br>    <span class="hljs-keyword">return</span> epoll-&gt;RegisterHandler(<br>            fd, [signal]() &#123; HandleSignalFd(signal); &#125;, EPOLLIN | EPOLLPRI);<span class="hljs-comment">//RegisterHandler将信号处理函数HandleSignalFd 注册到监控中</span><br>&#125;<br><span class="hljs-number">3.</span>信号处理函数调用waitpid<br>HandleSignalFd<br>   |-&gt;ReapAnyOutstandingChildren()<br>      |-&gt;ReapOneProcess()<span class="hljs-comment">//循环调用</span><br><span class="hljs-comment">//ReapOneProcess</span><br><span class="hljs-type">static</span> <span class="hljs-type">pid_t</span> <span class="hljs-title function_">ReapOneProcess</span><span class="hljs-params">()</span> &#123;<br>    ...<br>    <span class="hljs-keyword">auto</span> reaper = make_scope_guard([pid] &#123; TEMP_FAILURE_RETRY(waitpid(pid, nullptr, WNOHANG)); &#125;);<span class="hljs-comment">//调用waitpid接口</span><br>    ...<br>    service = ServiceList::GetInstance().FindService(pid, &amp;Service::pid);<br>    ...<br>    service-&gt;Reap(siginfo);<span class="hljs-comment">//杀进程组</span><br>&#125;<br></code></pre></td></tr></table></figure>
+<p><strong>调用接口</strong>：</p>
+<ol>
+<li><code>sigprocmask</code> + <code>signalfd</code> 信号和fd组合</li>
+<li><code>epoll-&gt;RegisterHandler</code> 注册fd和信号处理函数，信号到来调用信号处理函数</li>
+<li><code>waitpid</code> 信号处理函数调用waitpid 接口获取子进程信息<br><strong>上层重启流程</strong>：<br>当<strong>netd</strong>或者<strong>surfaceflinger</strong>这样的进程重启会重启<strong>zygote</strong>，或者<strong>zygote</strong>直接退出。<strong>init</strong>进程将会收到来自其<strong>zygote</strong>进程的<code>SIGCHLD-17</code>信号，<strong>init</strong>进程的信号处理函数会调用<strong>waitpid</strong>获取到退出进程<strong>zygote</strong>的PID，调用<code>Reap()</code>杀死对应pid所在的进程组进程。</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs c">service-&gt;Reap(siginfo)<br>   |-&gt;KillProcessGroup(SIGKILL);<br>      |-&gt;sendSignalToProcessGroup<br>         |-&gt;kill(-initialPid, signal)<span class="hljs-comment">//kill -9 -PID 杀死进程组</span><br></code></pre></td></tr></table></figure>
+<p>最终调用<strong>kill</strong> 接口以 <code>kill -9 -PID</code> 这样的方式杀死<strong>zygote</strong>进程所在的所有进程，基本包括zygote的所有子进程：<strong>system_server</strong>，<strong>APP进程</strong>。最后重启<strong>zygote</strong>，完成手机上层重启。<strong>zygote</strong>进程所在的所有进程，基本包括zygote的所有子进程：<strong>system_server</strong>，<strong>APP进程</strong>。最后重启<strong>zygote</strong>，完成手机上层重启。</p>
+<h2 id="4-三种信号使用方式比较"><a href="#4-三种信号使用方式比较" class="headerlink" title="4. 三种信号使用方式比较"></a>4. 三种信号使用方式比较</h2><blockquote>
+<p>ai总结</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>使用方式</th>
+<th>典型信号</th>
+<th>典型场景</th>
+<th>为什么这样用（优点）</th>
+<th>主要缺点 &#x2F; 局限</th>
+<th>调用涉及的主要内核接口</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>① sigaction 注册信号处理函数</strong></td>
+<td>NE：<code>SIGILL(4)</code>、<code>SIGTRAP(5)</code>、<code>SIGABRT(6)</code>、<code>SIGBUS(7)</code>、<code>SIGFPE(8)</code>、<code>SIGSEGV(11)</code>、<code>SIGSTKFLT(16)</code>、<code>SIGSYS(31)</code>；调试：<code>BIONIC_SIGNAL_DEBUGGER(35)</code>；重启链：<code>SIGCHLD(17)</code>（zygote）</td>
+<td><strong>tombstone &#x2F; NE</strong>：linker 启动时 <code>debuggerd_register_handlers</code> → <code>debuggerd_signal_handler</code> 写 <code>data/tombstones/</code>；<strong>调试</strong>：<code>kill -35 PID</code> 打堆栈且进程不退出；<strong>zygote 上层重启</strong>：<code>SigChldHandler</code> + <code>waitpid</code> 发现 system_server 退出后 zygote 自杀</td>
+<td>信号一到就由内核投递处理函数，响应及时；适合致命异常必须立刻 dump；handler 写入 <code>task.sighand-&gt;action[sig-1]</code>，fork 子进程可继承（zygote→app&#x2F;system_server）；比传统 core 更轻量</td>
+<td>处理函数运行在<strong>信号上下文</strong>，只能调用 <strong>async-signal-safe</strong> 函数，不能用 malloc、printf、加锁等；复杂 dump 必须尽快 fork&#x2F;转交 debuggerd；同一信号全局一份 handler，多线程并发收到信号时调试难度高；<code>fork+exec</code> 后 handler 被重置为 <code>SIG_DFL</code>，需重新注册</td>
+<td><code>__rt_sigaction</code> → <strong><code>do_sigaction</code></strong>；子进程回收配合 <strong><code>waitpid</code></strong></td>
+</tr>
+<tr>
+<td><strong>② 专用线程 + sigwait 轮询</strong></td>
+<td><code>SIGQUIT(3)</code>、<code>SIGUSR1(10)</code></td>
+<td><strong>ANR &#x2F; SWT</strong>：<code>Signal Catcher</code> 线程；<code>kill -3 PID</code> → <code>data/anr/trace_xx</code> 或 <code>anr_*.txt</code>；<strong>SIGUSR1</strong> 触发强制 GC</td>
+<td>与 tombstone 解耦，堆栈 dump 更轻、更贴 ANR 需求；专用线程集中处理，避免在任意线程信号上下文跑复杂逻辑；基于 <code>rt_sigtimedwait</code> 的框架易扩展</td>
+<td>需<strong>常驻专用线程</strong>轮询，有线程与 CPU 唤醒开销；响应依赖轮询周期，不如 handler <strong>即时</strong>；若处理慢，<code>pending</code> &#x2F; <code>shared_pending</code> 可能堆积；仍要正确管理线程信号掩码，避免与其他信号逻辑冲突</td>
+<td><code>sigwait</code> → <strong><code>rt_sigtimedwait</code></strong> → <strong><code>do_sigtimedwait</code></strong> → <strong><code>dequeue_signal</code></strong></td>
+</tr>
+<tr>
+<td><strong>③ signalfd + epoll（信号转 fd 事件）</strong></td>
+<td><code>SIGCHLD(17)</code></td>
+<td><strong>init 上层重启</strong>：监听 zygote、netd、surfaceflinger 等子进程退出；<code>HandleSignalFd</code> → <code>ReapOneProcess</code> → <code>waitpid</code> → <code>Reap</code> → <code>kill(-pid, SIGKILL)</code> 清理进程组</td>
+<td>init 主循环已是 epoll 驱动，SIGCHLD 与 property&#x2F;socket 等事件统一调度；<strong>先屏蔽 SIGCHLD</strong> 避免异步 handler 与主逻辑竞态；回调里可安全做较复杂的 <code>waitpid</code>&#x2F;服务清理</td>
+<td>链路长（mask → signalfd → epoll → read → waitpid），<strong>只适合已有 epoll 事件循环</strong>的进程；需提前 <code>sigprocmask</code> 屏蔽，否则 signalfd 与 handler 可能重复处理；read&#x2F;signalfd 处理不及时时 fd 可读事件可能积压</td>
+<td><strong><code>sigprocmask</code></strong>；<strong><code>signalfd</code></strong>（read 时 <strong><code>dequeue_signal</code></strong>）；用户态 <strong><code>epoll</code></strong> + <strong><code>waitpid(WNOHANG)</code></strong></td>
+</tr>
+</tbody></table>
+<h2 id="5-tombstone和trace文件"><a href="#5-tombstone和trace文件" class="headerlink" title="5. tombstone和trace文件"></a>5. tombstone和trace文件</h2><h3 id="5-1-tombstone-的组成"><a href="#5-1-tombstone-的组成" class="headerlink" title="5.1 tombstone 的组成"></a>5.1 tombstone 的组成</h3><hr>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><code class="hljs c">tombstone 文件的组成<br>   |*** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***<br>   |Build fingerprint:<br>   |Revision: <span class="hljs-string">&#x27;0&#x27;</span><br><span class="hljs-number">1.</span> |ABI: 架构信息<br>   |Timestamp: 时间戳<br>   |Process uptime: 处理时间<br>---|Cmdline: 异常进程名<br>   |pid: 异常进程号, tid: 异常线程号, name: 异常线程名  &gt;&gt;&gt; 进程名 &lt;&lt;&lt;<br>   |uid:<br><span class="hljs-number">2.</span> |tagged_addr_ctrl: <span class="hljs-number">0000000000000001</span> (PR_TAGGED_ADDR_ENABLE)<br>   |signal 信号 (信号名), code 信号码 (信号名), fault addr 异常地址<br>   |<br>---|寄存器内存信息：<br>   |x0-x7   :传递参数和返回值<br>   |x8      :间接结果寄存器，返回大型结构体的地址<br>   |x9-x15  :临时寄存器(调用者保存)<br>   |x16-x17 :内部过程调用寄存器,动态连接和函数跳转<br>   |x18     :平台寄存器，Android平台特殊用途<br><span class="hljs-number">3.</span> |x19-x28 :被调用者保存寄存器<br>   |x29     :FP 帧指针，指向当前函数栈帧<br>   |lr(x30) :连接寄存器，保存函数返回地址<br>   |sp      :栈指针，指向函数栈顶<br>   |pc      :程序计数器，存储下一条要执行的指令地址<br>   |pst     :程序状态寄存器，不是一个寄存器，是一组寄存器的集合(作用：todo)<br>   |<br>---|当前线程帧数 total frames<br>   |backtrace:线程调用栈(从下往上，栈的逻辑)<br><span class="hljs-number">4.</span> |      #<span class="hljs-number">00</span> pc <span class="hljs-number">0000000000081970</span>  /apex/com.android.runtime/lib64/bionic/libc.so (putc+<span class="hljs-number">16</span>) (BuildId: d723e574e82738da7e2b5cf9cba6f7ed)<br>   |    #帧号 pc 在库文件中的偏移 /崩溃代码所在的文件 (符号化后的函数名参数+函数中偏移位置) (BuildId:特定版本的库的唯一标识符)<br>   |<br>---|memory near 寄存器 (内存位置) 地址附近内存信息 每行显示<span class="hljs-number">16</span>字节地址范围内的内容<br>   |    <span class="hljs-number">000000764e8420</span>d0 <span class="hljs-number">000000764e842120</span> <span class="hljs-number">00000076f</span>b4e0c64   !.Nv...d.N.v...<br><span class="hljs-number">5.</span> |    <span class="hljs-number">000000764e8420</span>e0 <span class="hljs-number">000000764e843000</span> ffffffffffffffdf  .<span class="hljs-number">0.</span>Nv...........<br>   |  内存起始地址(<span class="hljs-number">16</span>进制) 内存地址到内存地址+<span class="hljs-number">8</span>地址范围的值 内存地址+<span class="hljs-number">8</span>到内存地址+<span class="hljs-number">16</span> 地址范围的值 内存内容(ASCII码格式)<br>   |...  <br>---|memory <span class="hljs-title function_">map</span> <span class="hljs-params">(<span class="hljs-number">2546</span> entries)</span>:虚拟地址空间映射情况<br>   |    00000000&#x27;14000000-00000000&#x27;23ffffff rw-         0  10000000  [anon:dalvik-main space]<br>   |    00000000&#x27;34000000-00000000&#x27;43ffffff rw-         0  10000000  [anon:dalvik-<span class="hljs-built_in">free</span> <span class="hljs-built_in">list</span> large object space]<br>6. |  ...<br>   |  00000076&#x27;5a257000-00000076&#x27;5a2bcfff r--         0     66000  /apex/com.android.btservices/lib64/libcrypto.<span class="hljs-title function_">so</span> <span class="hljs-params">(BuildId: <span class="hljs-number">29b</span>103a6d28209449eedc14616a03e74)</span><br>   |    00000076&#x27;5a2bd000-00000076&#x27;5a341fff r-x     66000     85000  /apex/com.android.btservices/lib64/libcrypto.<span class="hljs-title function_">so</span> <span class="hljs-params">(BuildId: <span class="hljs-number">29b</span>103a6d28209449eedc14616a03e74)</span><br>   |  内存起始地址-内存结束地址  权限  偏移 设备号 映射路径/内存区域名称<br>---|--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---<br>7. |其他线程的内存寄存器堆栈信息，同上<br>---|open files:打开的fd<br>   |    fd 0: /dev/<span class="hljs-title function_">null</span> <span class="hljs-params">(unowned)</span><br>   |    fd 1: /dev/<span class="hljs-title function_">null</span> <span class="hljs-params">(unowned)</span><br>   |    fd 2: /dev/<span class="hljs-title function_">null</span> <span class="hljs-params">(unowned)</span><br>8. |    fd 3: socket:[3239061] <span class="hljs-params">(unowned)</span><br>   |    fd 4: /sys/kernel/tracing/<span class="hljs-title function_">trace_marker</span> <span class="hljs-params">(unowned)</span><br>   |    fd 5: /dev/binderfs/<span class="hljs-title function_">binder</span> <span class="hljs-params">(unowned)</span><br>   |  fd 号: /路径  <span class="hljs-params">(是否被Bionic 跟踪)</span><br></code></pre></td></tr></table></figure>
+<hr>
+<h3 id="5-2-anr-trace-文件组成"><a href="#5-2-anr-trace-文件组成" class="headerlink" title="5.2 anr&#x2F;trace 文件组成"></a>5.2 anr&#x2F;trace 文件组成</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><code class="hljs c">   |----- pid 进程PID at 进程被Dump的时间 -----<br>   |Cmd line: 进程名<br>   |Build fingerprint: <span class="hljs-string">&#x27;(BRAND)/$(PRODUCT)/$(DEVICE):$(VERSION.RELEASE)/$(ID)/$(VERSION.INCREMENTAL):$(TYPE)/$(TAGS)&#x27;</span><br><span class="hljs-number">1.</span> |ABI: <span class="hljs-string">&#x27;CPU架构信息&#x27;</span><br>   |Build type: 版本构建类型<br>   |TODO，Debug Store: <span class="hljs-number">3</span>,<span class="hljs-number">16</span>,<span class="hljs-number">136120689</span>::ID:<span class="hljs-number">0</span>,C:P,T:<span class="hljs-number">133679640</span>,N:Finish,D:tname=pool<span class="hljs-number">-4</span>-thread<span class="hljs-number">-2</span>;tid=<span class="hljs-number">123</span>;prid=<span class="hljs-number">28</span>d402f|...<br>   |suspend all histogram: Sum: <span class="hljs-number">76.080</span>ms <span class="hljs-number">99</span>% C.I. <span class="hljs-number">2u</span>s<span class="hljs-number">-9807.360u</span>s Avg: <span class="hljs-number">341.165u</span>s Max: <span class="hljs-number">13203u</span>s<span class="hljs-comment">//线程挂起信息</span><br>   |DALVIK THREADS (线程数量):<br>---|<br>   |<span class="hljs-string">&quot;线程名&quot;</span> 是否守护线程daemon prio=线程优先级 tid=线程序号 线程Java层状态<br>   |  | group=<span class="hljs-string">&quot;线程组名&quot;</span> sCount=线程挂起次数 ucsCount=线程主动被挂起 flags=<span class="hljs-number">1</span> obj=该线程关联的java对象地址 self=该线程地址<br>   |  | sysTid=线程号 nice=调度优先级 cgrp=cgroup组 sched=调度策略 handle=native线程句柄<br>   |  | state=内核线程状态 schedstat=( Running运行时间 Runnable等待调度时间 CPU切换次数 ) utm=用户态执行时间 stm=内核态执行时间 core=线程最后运行在哪个cpu HZ=时钟频率<br>   |  | <span class="hljs-built_in">stack</span>=栈地址空间起始地址-栈地址空间结束地址 stackSize=栈大小<br>   |  | held mutexes=线程持有的mutexes锁<br>   |  线程调用堆栈：（调用顺序：从下到上）<br>   |  native层堆栈：#栈帧号 pc pc地址 函数库文件位置 (函数名+调用偏移位置)<br><span class="hljs-number">2.</span> |  native: #<span class="hljs-number">00</span> pc <span class="hljs-number">000</span>dfd48  /apex/com.android.runtime/lib64/bionic/libc.so (__epoll_pwait+<span class="hljs-number">8</span>) (BuildId: <span class="hljs-number">29</span>a58be909ab3ac902dd4219c1701b9b)<br>   |  ...<br>   |  Java层调用堆栈：<br>   |  at java函数名 (函数所在文件：所在文件行号)<br>   |  ...<br>   |  at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:<span class="hljs-number">629</span>)<br>   |  at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:<span class="hljs-number">1024</span>)<br>   |DumpLatencyMs: dump该线程耗时时间<br>---|<br>   |<br>   |Zygote loaded classes=zygote预加载类信息数量 post zygote classes=本进程额外加载的类数量<br>   |<br>   |已注册的类加载器信息：<br>   |Dumping registered class loaders<br>   |#<span class="hljs-number">0</span> dalvik.system.PathClassLoader: [], parent #<span class="hljs-number">1</span><br>   |#<span class="hljs-number">1</span> java.lang.BootClassLoader: [], no parent<br>   |...<br>   |#<span class="hljs-number">7</span> dalvik.system.PathClassLoader: [/system_ext/framework/pkms_legal_service.jar], parent #<span class="hljs-number">1</span><br>   |Done dumping class loaders<br>   |<br><span class="hljs-number">3.</span> |Classes initialized: <span class="hljs-number">0</span> in <span class="hljs-number">0</span> 类初始化信息<br>   |<br>   |Intern table字符串常量池: 字符串常量的强引用计数 strong; 字符串常量的弱引用计数 weak<br>   |<br>   |JNI: CheckJNI is off; globals=JNI全局引用数量 (plus JNI弱引入数量 weak)<br>   |<br>   |进程加载的native共享库信息<br>   |Libraries: libandroid.so libaudioeffect_jni.so ...<br>   |<br>   |堆内存信息<br>   |Heap: <span class="hljs-number">6</span>% <span class="hljs-built_in">free</span>, <span class="hljs-number">9319</span>KB/<span class="hljs-number">9955</span>KB<br>   |<br>   |ART虚拟机预加载镜像信息<br>   |Image spaces:<br>   |...<br>   |/system/framework/arm64/boot-framework-adservices.art<br>---|<br>   |Dumping cumulative Gc timings<br><span class="hljs-number">4.</span> |   ART 中GC的时间数据<br>   |<br></code></pre></td></tr></table></figure>
+<h2 id="6-kill-9-pid-探究进程是如何退出的"><a href="#6-kill-9-pid-探究进程是如何退出的" class="headerlink" title="6. kill -9 pid 探究进程是如何退出的"></a>6. kill -9 pid 探究进程是如何退出的</h2><p><strong>线程状态</strong>：<br><code>fls(state)</code> 后查 <code>&quot;RSDTtXZPI&quot;</code>：</p>
+<table>
+<thead>
+<tr>
+<th>掩码后 <code>state</code></th>
+<th>组合</th>
+<th><code>fls</code></th>
+<th>字符</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>0x00</code></td>
+<td><code>__state=RUNNING</code>，<code>exit_state=0</code></td>
+<td>0</td>
+<td><strong>R</strong></td>
+</tr>
+<tr>
+<td><code>0x01</code></td>
+<td><code>INTERRUPTIBLE</code></td>
+<td>1</td>
+<td><strong>S</strong></td>
+</tr>
+<tr>
+<td><code>0x02</code></td>
+<td><code>UNINTERRUPTIBLE</code> &#x2F; <code>KILLABLE</code>*</td>
+<td>2</td>
+<td><strong>D</strong></td>
+</tr>
+<tr>
+<td><code>0x04</code></td>
+<td><code>STOPPED</code></td>
+<td>3</td>
+<td><strong>T</strong></td>
+</tr>
+<tr>
+<td><code>0x08</code></td>
+<td><code>TRACED</code></td>
+<td>4</td>
+<td><strong>t</strong></td>
+</tr>
+<tr>
+<td><code>0x10</code></td>
+<td><code>exit_state=EXIT_DEAD</code></td>
+<td>5</td>
+<td><strong>X</strong></td>
+</tr>
+<tr>
+<td><code>0x20</code></td>
+<td><code>exit_state=EXIT_ZOMBIE</code></td>
+<td>6</td>
+<td><strong>Z</strong></td>
+</tr>
+<tr>
+<td><code>0x40</code></td>
+<td><code>TASK_PARKED</code></td>
+<td>7</td>
+<td><strong>P</strong></td>
+</tr>
+<tr>
+<td><code>0x80</code></td>
+<td>仅 <code>TASK_IDLE</code> 特殊路径</td>
+<td>8</td>
+<td><strong>I</strong></td>
+</tr>
+</tbody></table>
+<p>通过下面流程，一直走到 __send_signal_locked 方法，主要的逻辑就是，将信号填入该线程的<code>task_struct.signal.pending.signal</code> 中，然后<code>signal_wake_up</code>唤醒该线程处理信号<br>特殊点：</p>
+<ul>
+<li>有些信号是针对整个线程组的，有些信号只是针对于某一个线程，这其中的区别在于type值： <code>PIDTYPE_TGID</code> 代表发给的是整个线程组，信号最终会被添加到<code>task.signal.pending</code>中，<code>PIDTYPE_PID</code> 代表就是单个线程，信号最终会被添加到<code>task.pending</code>中</li>
+<li>对于<code>SIGKILL</code> 信号特殊处理：<code>SIGKILL</code> 会触发线程组退出语义并唤醒相关线程，最终使线程组不可恢复退出</li>
+</ul>
+<h3 id="6-1-填入SIGKILL信号"><a href="#6-1-填入SIGKILL信号" class="headerlink" title="6.1 填入SIGKILL信号"></a>6.1 填入SIGKILL信号</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs c">kill <span class="hljs-number">-9</span> PID 系统调用内核流程<br>|-&gt;kill_something_info(sig, &amp;info, pid)[common/kernel/signal.c]<br>   |-&gt;kill_proc_info(sig, info, pid)[..]<br>      |-&gt;kill_pid_info(sig, info, find_vpid(pid))[..]<br>        |-&gt;group_send_sig_info(sig, info, p, PIDTYPE_TGID)<br>           |-&gt;do_send_sig_info(sig, info, p, type)<br>              |-&gt;send_signal_locked(sig, info, p, type)[..]<span class="hljs-comment">//和上述其他信号的发送一样最终调用的是该函数：send_signal_locked</span><br>                 |-&gt;__send_signal_locked(sig, info, t, type, force)<br>                    |-&gt;sigaddset(&amp;pending-&gt;signal, sig)<span class="hljs-comment">//信号填入task_struct.signal.pending.signal(线程组共享)中</span><br>                    |-&gt;complete_signal(sig, t, type)<span class="hljs-comment">//选择合适的线程处理信号，对于致命信号，SIGKILL 信号特殊处理：所有线程组都需要填入SIGKILL信号，并且唤醒处理该信号</span><br>                       |-&gt;wants_signal(sig, p)<span class="hljs-comment">// 选择合适的线程处理信号，优先选择 发送的线程，如果不符合再选择线程组中其他线程</span><br>                       |-&gt;signal_wake_up(t, sig == SIGKILL)<span class="hljs-comment">//唤醒处理信号的线程</span><br></code></pre></td></tr></table></figure>
+<p>我们假设发送给<strong>system_server</strong>进程，<strong>system_server</strong>进程中有：main主线程，子线程<strong>Thread_A</strong>，子线程<strong>Thread_B</strong><br>当<code>kill -9 system_server_pid</code>后执行后，信号值首先被添加到线程组共享的 <strong>task_struct.signal.pending.signal</strong>中，然后由于<code>SIGKILL</code> 信号特殊，该信号还被添加到各个线程的<strong>task_struct.pending</strong> 中，此时三个线程的情况如下图所示：<br><img src="/blog_imgs/10_Android_signal_use/2_kill_-9_system_server_send.svg" srcset="/img/loading.gif" lazyload alt="113d63e1fd22303b5af078f011c289a9.svg+xml"></p>
+<ol>
+<li>线程组共享的<code>signal</code>中填入信号值。</li>
+<li>找到合适线程处理信号通常是向谁发送选择谁。</li>
+<li>对于<code>SIGKILL</code>信号特殊： 所有线程组的线程都需要添加<code>SIGKILL</code>添加到私有成员<code>pending</code>中， 线程组信号的退出<code>code</code>设置为<code>sig 9</code>，线程组退出<code>flags</code>设置为<strong>SIGNAL_GROUP_EXIT</strong>。</li>
+<li>唤醒线程：每个线程的<em>thread_info</em>中的<em>flags</em>添加 <code>TIF_SIGPENDING</code>，代表唤醒的线程有信号需要处理。</li>
+</ol>
+<h3 id="6-2-取出SIGKILL信号进行处理"><a href="#6-2-取出SIGKILL信号进行处理" class="headerlink" title="6.2 取出SIGKILL信号进行处理"></a>6.2 取出SIGKILL信号进行处理</h3><p><strong>signal_wake_up</strong> 目标线程被唤醒后流程</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs c">ret_to_user/work_pending<br>  |-&gt;do_notify_resume()<span class="hljs-comment">//循环处理</span><br>     |-&gt;do_signal()<br>        |-&gt;get_signal()<br>           |-&gt;do_group_exit()<br>              |-&gt;do_exit()<br>                 |-&gt;exit_notify <span class="hljs-comment">//子线程退出，并释放</span><br></code></pre></td></tr></table></figure>
+<h4 id="6-2-1-主线程被唤醒对信号的处理"><a href="#6-2-1-主线程被唤醒对信号的处理" class="headerlink" title="6.2.1 主线程被唤醒对信号的处理"></a>6.2.1 主线程被唤醒对信号的处理</h4><p><img src="/blog_imgs/10_Android_signal_use/3_%E4%B8%BB%E7%BA%BF%E7%A8%8B%E5%AF%B9SIGKILL%E7%9A%84%E5%A4%84%E7%90%86.svg" srcset="/img/loading.gif" lazyload alt="c6dae8dbfc50d840be52ec245f01c148.svg+xml"></p>
+<ol>
+<li>取出信号–将信号值从主线程<code>task.pending</code> 擦除</li>
+<li>当主线程处理<code>SIGKILL</code>时候，如果还有子线程未退出，那么主线程的退出状态<strong>task.exit_state&#x3D;EXIT_ZOMBIE</strong>，主线程的线程状态为<strong>Z</strong>状态，要等所有子线程都退出后，主线程的退出状态被设置为<strong>task.exit_state&#x3D;EXIT_DEAD</strong>，主线程才会真正退出。</li>
+</ol>
+<h4 id="6-2-2-子线程线程被唤醒对信号的处理"><a href="#6-2-2-子线程线程被唤醒对信号的处理" class="headerlink" title="6.2.2 子线程线程被唤醒对信号的处理"></a>6.2.2 子线程线程被唤醒对信号的处理</h4><p><img src="/blog_imgs/10_Android_signal_use/4_%E5%AD%90%E7%BA%BF%E7%A8%8B%E5%AF%B9%E4%BA%8ESIGKILL%E7%9A%84%E5%A4%84%E7%90%86.svg" srcset="/img/loading.gif" lazyload alt="e272a0f704d6ae510eb5994505944efc.svg+xml"></p>
+<ol>
+<li>取出信号——将信号值从子线程<code>task.pending</code> 擦除</li>
+<li>子线程退出状态<code>exit_state</code>直接设置为 <strong>EXIT_DEAD</strong> 状态</li>
+<li>子线程执行 <code>release_task</code>流程子线程A线程的销毁工作，子线程A就退出了（子线程B也相同）。</li>
+<li>子线程A是此时线程组中除主线程外最后一个退出的线程了，在执行 <code>release_task</code>流程还需要通知到<strong>system_server</strong>的父进程<strong>zygote</strong>进程，给父进程<strong>zygote</strong>进程发送 <strong>SIGCHLD</strong> 信号，随后主线程的退出则交给父进程<strong>zygote</strong>来处理（这里就接上了上面zygote中信号的使用的讲解了-3.1 zygote中如何监测？）</li>
+</ol>
+<h4 id="6-2-3-父进程对子进程传来的SIGCHLD信号的处理"><a href="#6-2-3-父进程对子进程传来的SIGCHLD信号的处理" class="headerlink" title="6.2.3 父进程对子进程传来的SIGCHLD信号的处理"></a>6.2.3 父进程对子进程传来的SIGCHLD信号的处理</h4><blockquote>
+<p>此时system_server主线程短暂还未退出，处于Z状态中</p>
+</blockquote>
+<p>图片：父进程zygote 对于SIGCHLD信号的处理<br><img src="/blog_imgs/10_Android_signal_use/5_zygote%E5%AF%B9%E4%BA%8E%E5%AD%90%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%A4%84%E7%90%86.svg" srcset="/img/loading.gif" lazyload alt="e59a18648858f0532302d284da1ceab6.svg+xml"></p>
+<p>当<strong>zygote</strong>收到了来自子进程<strong>system_server</strong>的<strong>SIGCHLD</strong>信号，调用对应的信号处理函数<code>SigChldHandler</code> 调用<code>waitpid</code>监听子进程退出。</p>
+<ol>
+<li>在<strong>zygote</strong>的<code>task.children</code> 遍历是否存在要退出的主线程，此时会<strong>system_server</strong>的主线程被遍历到。</li>
+<li>此时如果<strong>system_server</strong>是只有主线程没有退出，子线程都退出了，那么waitpid流程中会设置system_server主线程退出状态<strong>task.exit_state&#x3D;EXIT_DEAD</strong>，system_server主线程随后走release_task完成线程退出。<br>完整流程图：<br><img src="/blog_imgs/10_Android_signal_use/6_system_server%E8%BF%9B%E7%A8%8B%E9%80%80%E5%87%BA%E5%AE%8C%E6%95%B4%E5%9B%BE.svg" srcset="/img/loading.gif" lazyload alt="a475c55e1dbdefdf22db2cd4f03dfeb4.svg+xml"></li>
+</ol>
+<blockquote>
+<p>补充：<br>在分析稳定性问题时候，经常会出现主线程是Z状态，这时候你问AI，AI会告诉你是父进程没有使用waitpid等待子进程退出，这是不正确的。<br>1.根据上述我们的梳理，重要的父进程init&#x2F;zygote都有对子进程使用waitpid接口监控，所以这个因素我们可以排除掉<br>2.答案是：这种情况往往是由于子线程存在异常导致的，例如D状态的子线程，由于D状态子线程是无法响应信号的，所以它不会走退出流程，主线程一直处于Z状态，或者遇到另外一种情况，子线程在内核态存在死循环，关中断情况下，内核死循环无法走处理信号流程，无法响应信号的,也不会走退出流程。zygote waitpid流程中只会将没有子线程的主线程退出状态设置为EXIT_DEAD</p>
+</blockquote>
+<h2 id="7-NE-信号处理流程-tombstone生成流程"><a href="#7-NE-信号处理流程-tombstone生成流程" class="headerlink" title="7. NE 信号处理流程&amp;tombstone生成流程"></a>7. NE 信号处理流程&amp;tombstone生成流程</h2><p>以上已经梳理过NE中8个致命信号的注册，所以信号注册的流程先省略，我们先拿 <code>SIGSEGV</code> 信号来做举例，内核中进程中得到<code>SIGSEGV</code> 的处理流程，随后再梳理用户态信号处理函数对该信号的处理，进一步梳理<code>tombstone</code>中的各项信息是如何得来的。</p>
+<h3 id="7-1-信号的注入和处理"><a href="#7-1-信号的注入和处理" class="headerlink" title="7.1 信号的注入和处理"></a>7.1 信号的注入和处理</h3><p>当用户态线程访问到异常的内存地址时，CPU硬件读取异常地址信息，抛出异常，最终调用异常向量表函数调用到<code>el0t_64_sync_handler</code>。后续的流程如下：</p>
+<ul>
+<li>1.注入信号</li>
+<li>2.取出信号</li>
+<li>3.调用信号处理函数</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs c">el0t_64_sync_handler[kernel<span class="hljs-number">-6.6</span>\arch\arm64\kernel\entry-common.c]进入内核态代码流程<br>|-&gt;el0_da(regs, esr)[..]<span class="hljs-comment">//esr为异常类型</span><br>   |-&gt;do_mem_abort(far, esr, regs);[kernel<span class="hljs-number">-6.6</span>\arch\arm64\mm\fault.c]<br>   |  |-&gt;do_page_fault[,SIGSEGV,]<span class="hljs-comment">//这里由于类型是data abort取的处理函数是do_page_fault，当然还有其他类型，可以进一步参考</span><br>   |     |-&gt;arm64_force_sig_fault(SIGSEGV..)[kernel<span class="hljs-number">-6.6</span>\arch\arm64\kernel\traps.c]<br>   |       |-&gt;force_sig_fault(signo<span class="hljs-comment">/*SIGSEGV*/</span>,)[kernel<span class="hljs-number">-6.6</span>\kernel\signal.c]<br>   |          |-&gt;force_sig_fault_to_task(..)[..]<br>   |             |-&gt;force_sig_info_to_task(..)[..]<br>   |                |-&gt;send_signal_locked(sig, info, t, PIDTYPE_PID)<span class="hljs-comment">//给线程task.pending添加。非线程组共享</span><br>   |                   |-&gt;__send_signal_locked(..)<br>   |                      |-&gt;sigaddset(&amp;pending-&gt;signal, sig)到这里将信号放到task中的pending-&gt;signal 中<br>   |                   |-&gt;complete_signal(sig, t, type)<span class="hljs-comment">//选择合适的线程处理信号，SIGKILL 信号特殊处理：所有线程组都需要填入SIGKILL信号，并且唤醒处理该信号</span><br>   |                       |-&gt;wants_signal(sig, p)<span class="hljs-comment">// 选择合适的线程处理信号，优先选择 发送的线程，如果不符合再选择线程组中其他线程</span><br>   |                       |-&gt;signal_wake_up(t, sig == SIGKILL)<span class="hljs-comment">//唤醒处理信号的线程</span><br>   |-&gt;exit_to_user_mode[kernel<span class="hljs-number">-6.6</span>\arch\arm64\kernel\entry-common.c]退出内核态进入用户态<br>      |-&gt;exit_to_user_mode_prepare(regs)<br>         |-&gt;do_notify_resume(regs, flags)[kernel<span class="hljs-number">-6.6</span>\arch\arm64\kernel\signal.c]<span class="hljs-comment">//循环处理</span><br>              |-&gt;do_signal(regs)[..]<br>                 |-&gt;get_signal(&amp;ksig) 取出刚刚存放的信号<br>                    |-&gt;handle_signal(&amp;ksig, regs)处理栈帧相关，即将返回用户态，为返回用户态做准备<br>                  |-&gt;setup_rt_frame<br>                     |-&gt;setup_return <span class="hljs-comment">//设置PC，X30 等寄存器信息，信号处理函数debuggerd_signal_handler地址放入PC， 信号函数执行完，返回内核的执行函数__kernel_rt_sigreturn 放入X30</span><br></code></pre></td></tr></table></figure>
+<ol>
+<li>根据异常的信息，匹配属于 <strong>data abort</strong> 异常类型，将<strong>SIGSEGV</strong>信号塞入线程<code>task.pending</code>中，并且选择异常线程处理该信号。</li>
+<li>随后该线程返回用户态的之前检查是否存在待处理的信号，取出待处理的<strong>SIGSEGV</strong>信号，并取到信号处理函数地址放入PC中，待返回用户态执行。</li>
+</ol>
+<h3 id="7-2-信号处理函数处理"><a href="#7-2-信号处理函数处理" class="headerlink" title="7.2 信号处理函数处理"></a>7.2 信号处理函数处理</h3><p>返回用户态执行信号处理函数。<br>问题-1：<strong>在信号处理函数中我们的目的是什么？——产生tombstone文件信息</strong></p>
+<ol>
+<li>出现问题的场景——<strong>线程堆栈</strong></li>
+<li>出现问题函数的参数内存信息——<strong>寄存器信息，内存信息等</strong></li>
+<li>异常地址在什么文件位置——<strong>进程的内存映射信息</strong></li>
+<li>其他特定问题日志<br>问题-2：<strong>信号处理函数运行在异常线程，这样运行的过程中，线程堆栈，寄存器信息又会被改变，岂不是破坏现场</strong>？</li>
+<li>为了不破坏异常线程现场，我们采取的措施是：复制一个和异常线程一样的线程——“<strong>伪线程</strong>”来处理剩下的工作</li>
+<li>伪线程会创建四个<code>fd</code>，作为两个<code>pipe</code> 用来将<code>signal</code> 信息传递给新clone的crash_dump进程</li>
+<li>随后伪线程还<code>double clone</code> 创建一个孤儿进程，用来给<code>crash_dump</code>进程读取内存信息使用</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs c">debuggerd_signal_handler[debuggerd\handler\debuggerd_handler.cpp]<br>|-&gt;log_signal_summary [..]<span class="hljs-comment">//将进程接受到信号信息打印到crash log中，例如F libc    : Fatal signal</span><br>|-&gt;clone(debuggerd_dispatch_pseudothread..)[..]<span class="hljs-comment">//clone 伪进程执行debuggerd_dispatch_pseudothread，其实作为自己的子线程，使用clone代替pthread_create避免TLS问题</span><br>   |-&gt;debuggerd_dispatch_pseudothread <span class="hljs-comment">//创建pipe和fork子进程执行crash_dump，pipe用于crash_dump和伪线程直接通信，伪线程通过pipe进程信号异常信息传递给crash_dump进程</span><br>      |-&gt;Pipe(...)创建四个fd，用作两个pipe的读端和写端，用于将signal等信息，传给crash_dump进程<br>      |-&gt;crash_dump_pid = _Fork()<span class="hljs-comment">//不是fork实际通过clone 创建crash_dump进程</span><br>      |-&gt;execle(CRASH_DUMP_PATH,..)<span class="hljs-comment">//execle 执行crash_dump主程序，转到crash_dump main()函数</span><br>         |<br>      |-&gt;create_vm_process()<span class="hljs-comment">//创建vm 进程，用于让crash_dump ptrace 异常进程的崩溃信息</span><br>         |-&gt;clone<br>         |-&gt;clone <span class="hljs-comment">//两次clone，让crash_dump 能够安全的ptrace该进程内存信息</span><br></code></pre></td></tr></table></figure>
+<h4 id="7-2-1-crash-dump进程"><a href="#7-2-1-crash-dump进程" class="headerlink" title="7.2.1 crash_dump进程"></a>7.2.1 crash_dump进程</h4><p><strong>crash_dump</strong>进程会再次<strong>fork</strong> 一个新的进程 <strong>crash_dump64&#x2F;crash_dump32</strong>，该进程负责主要的dump工作。<br><strong>crash_dump64&#x2F;crash_dump32</strong>进程：寄存器信息+线程的内存信息&#x3D;调用栈</p>
+<ol>
+<li>遍历所有崩溃进程的子线程，除了伪线程，<code>ptrace</code>各个子线程读取寄存器信息</li>
+<li>获取伪线程创建的孤儿进程:<code>vm_process</code>-用来获取内存快照信息</li>
+<li>用unwinder模块结合孤儿进程<code>vm_process</code>用来获取进程的内存信息，从而dump出各个线程的堆栈信息</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><code class="hljs c">main()<br>|-&gt;output_pipe(dup(STDOUT_FILENO))和input_pipe(dup(STDIN_FILENO))<span class="hljs-comment">//保存伪进程传过来的pipe</span><br>|-&gt;forkpid = fork()<span class="hljs-comment">//crash dump进程fork一个新进程用来ptrace 崩溃异常进程</span><br>   |-&gt;ParseArgs<span class="hljs-comment">//往下进入子进程流程，获取从伪进程传来的参数</span><br>   |-&gt;循环遍历每一个线程(跳过伪进程)<br>      |-&gt;ptrace_seize_thread(target_proc_fd, thread, &amp;error)<span class="hljs-comment">//循环ptrace各个线程</span><br>      |-&gt;ptrace_interrupt(thread, &amp;info.signo)<span class="hljs-comment">//暂停线程，以便后面读取寄存器</span><br>      |-&gt;ptrace(PTRACE_GETREGSET,..)<br>      |-&gt;ReadCrashInfo(input_pipe,info.registers..)<span class="hljs-comment">//如果ptrace到崩溃线程，那么要读取伪线程传过来的异常信息(寄存器上下文等)，重要的是通过提供的信息，读取崩溃线程的寄存器信息</span><br>      |-&gt;info.registers.reset(unwindstack::Regs::RemoteGet(thread))<span class="hljs-comment">//其他线程也需要通过unwinder模块读取寄存器信息，辅助分析用</span><br>   |-&gt;vm_pid = wait_for_vm_process(pseudothread_tid);<span class="hljs-comment">//获取孤儿进程-内存快照进程，</span><br>   |-&gt;ptrace(PTRACE_DETACH..)<span class="hljs-comment">//所有线程detach</span><br>   |-&gt;onnect_tombstone_server(g_target_thread, &amp;g_tombstoned_socket,..)和tombstone建立socket连接，获取存放dump信息的fd<br>   |-&gt;unwindstack::AndroidRemoteUnwinder <span class="hljs-title function_">unwinder</span><span class="hljs-params">(vm_pid, unwindstack::Regs::CurrentArch())</span><span class="hljs-comment">//传入内存快照进程vm_pid通过unwinder获取内存信息</span><br>   |-&gt;<span class="hljs-title function_">dump_backtrace</span><span class="hljs-params">(<span class="hljs-built_in">std</span>::move(g_output_fd), &amp;unwinder,..)</span>获取寄存器信息和backtrace<br>      |-&gt;dump_process_header <span class="hljs-comment">//log中打印 出abi,cmdline进程信息</span><br>      |-&gt;dump_backtrace_thread <span class="hljs-comment">//打印寄存器信息+堆栈信息</span><br>         |-&gt;log_backtrace<br>   |-&gt;engrave_tombstone <span class="hljs-comment">//生成 tombstone 日志信息</span><br>      |-&gt;engrave_tombstone_proto<span class="hljs-comment">//生成tombstone文件中1-8 部分信息</span><br></code></pre></td></tr></table></figure>
+<h3 id="7-3-信号处理函数时序图"><a href="#7-3-信号处理函数时序图" class="headerlink" title="7.3 信号处理函数时序图"></a>7.3 信号处理函数时序图</h3><p>图片：信号处理函数处理整体图片<br><img src="/blog_imgs/10_Android_signal_use/7_NE_%E4%BF%A1%E5%8F%B7%E5%A4%84%E7%90%86%E5%87%BD%E6%95%B0%E6%B5%81%E7%A8%8B%E6%97%B6%E5%BA%8F%E5%9B%BE.svg" srcset="/img/loading.gif" lazyload alt="963d21b8fadd86a4558fb95153419283.svg+xml"><br>文字描述：该图主要梳理产生<code>tombstone</code>过程中进程间关系，特别是进程和进程间的关系</p>
+<ol>
+<li><strong>说明</strong>：蓝紫色箭头表示通过<code>clone</code>创建新进程、大红颜色箭头表示通过<code>fork</code>创建新进程、天蓝颜色箭头表示通过<code>pipe</code>完成进程间通信、绿色箭头表示通过<code>socket</code>来完成进程间通信、咖啡色箭头表示通过<code>waitpid</code>来监听线程退出。</li>
+<li><strong>崩溃线程</strong>：当崩溃线程出现内存访问异常崩溃，线程从内核态返回用户态信号处理函数<code>debuggerd_signal_handler</code>被调用。从内核态返回来的有三个信息（信号，信号具体信息，内核上下文信息）崩溃线程会通过<code>log_signal_summary</code>将信号具体信息通过日志打印出来例如：<code> F libc    : Fatal signal 6 (SIGABRT)， code -6 (SI_TKILL) in tid 3473 (binder:1654_12)， pid 1654 (system_server)</code>，崩溃线程通过<code>clone</code>方式创建“新进程”：<code>伪线程</code>，虽然看似是“新进程”，但是clone的参数来看，与父进程关系：属于同一个线程组，共享信号处理器，共享虚拟内存空间，其实崩溃线程的子线程。那么剩下的事务交给<code>伪线程</code>处理，崩溃线程就通过<code>futex_wait(</code>等待<code>伪线程</code>退出即可。这里通过一个伪线程来处理是为了防止，如果不通过伪线程在自身线程处理，可能会造成崩溃线程崩溃的内存信息遭到破坏。</li>
+<li><strong>伪线程</strong>：入口函数为<code>debuggerd_dispatch_pseudothread</code>，伪线程的职责就是需要读取崩溃进程的内存将崩溃现场还原出来，实则就是各个线程的堆栈还原出来，还原堆栈需要两个信息，崩溃进程的内存+各个线程的寄存器信息也就是上述信号处理函数中的内核上下文信息。由于伪线程和这些崩溃进程各子线程共享内存空间，如果直接使用伪线程去读内存，也可能导致伪线程崩溃，所以这里需要一个新进程来做处理，通过<code>clone+execle</code> 方式创建新的进程<code>crash_dump</code>来完成该操作。伪线程并将内核上下文信息传给<code>crash_dump进程</code>。还需要将崩溃进程的内存信息传给<code>crash_dump进程</code>，但是由于崩溃进程由于崩溃急着退出，不可能等着crash_dump来读取它的内存信息，所以只好提供一个和崩溃线程内存副本给他，如何提供呢？通过伪线程使用<code>double clone</code>的方式<code>create_vm_process()</code>创建一个孤儿进程，提供给<code>crash_dump进程</code>读取内存，这样崩溃进程就可以快速退出了。</li>
+<li><strong>crash_dump进程</strong>：<code>crash_dump</code>进程的主要作用就是读取崩溃进程内存+获取线程寄存器，将各个线程的堆栈还原。这里的设计主要考虑到信号的多样性，对于致命信号例如signal 6 、11等这样的异常信号，我们是需要崩溃进程等待crash_dump进程将所有信息dump完毕，才让崩溃进程退出的，但是一些单纯的debugger信号（用来dump进程堆栈的信号—sig 3）只用将寄存器信号dump完毕，被dump的进程就可以不用等待<code>crash_dump进程</code>执行完毕了，这里<code>crash_dump</code>为什么还有<code>fork</code>一个子线程来处理不是很理解，感觉使用<code>crash_dump</code>自己进程本身也能处理呀，暂时不知道为什么这样设计的。然后根据伪线程创建的<code>vm process</code> ，<code>crash_dump进程</code>通过<code>vm_process</code> 使用<code>unwinder</code>模块 将堆栈还原处理。<blockquote>
+<p>这块流程实在复杂，看流程的过程中，一度很崩溃，不知道 <a href="mailto:&#106;&#x6d;&#103;&#x61;&#x6f;&#x40;&#x67;&#111;&#x6f;&#x67;&#x6c;&#101;&#x2e;&#x63;&#111;&#109;">jmgao@google.com</a> 作者为何重构得如此复杂，好在代码整体还是能读完。对于ptrace和unwind，只能下回再梳理</p>
+</blockquote>
+</li>
+</ol>
+<p>Unwinder 内部流程：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-comment">// Unwinder.cpp:122-297</span><br><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">Unwinder::Unwind</span><span class="hljs-params">(...)</span> </span>&#123;<br>    <span class="hljs-keyword">for</span> (; frames_.<span class="hljs-built_in">size</span>() &lt; max_frames_;) &#123;<br>        <span class="hljs-comment">// 1. 从寄存器获取当前 PC、SP</span><br>        <span class="hljs-type">uint64_t</span> cur_pc = regs_-&gt;<span class="hljs-built_in">pc</span>();<br>        <span class="hljs-type">uint64_t</span> cur_sp = regs_-&gt;<span class="hljs-built_in">sp</span>();<br>       <br>        <span class="hljs-comment">// 2. 从内存读取 ELF 文件，解析 DWARF 信息</span><br>        elf = map_info-&gt;<span class="hljs-built_in">GetElf</span>(process_memory_， arch_);<br>       <br>        <span class="hljs-comment">// 3. 使用 DWARF 信息或从栈读取返回地址</span><br>        <span class="hljs-keyword">if</span> (!stepped) &#123;<br>            <span class="hljs-comment">// 从栈读取返回地址（使用 vm_process 内存）</span><br>            regs_-&gt;<span class="hljs-built_in">SetPcFromReturnAddress</span>(process_memory_.<span class="hljs-built_in">get</span>());<br>        &#125;<br>       <br>        <span class="hljs-comment">// 4. 更新寄存器，继续下一帧</span><br>        <span class="hljs-comment">// ...</span><br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+<h2 id="8-anr-xx-trace-xx文件产生流程"><a href="#8-anr-xx-trace-xx文件产生流程" class="headerlink" title="8.anr_xx&#x2F;trace_xx文件产生流程"></a>8.anr_xx&#x2F;trace_xx文件产生流程</h2><p>system_server dump调用入口</p>
+<figure class="highlight gradle"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs gradle"><span class="hljs-regexp">/frameworks/</span>base<span class="hljs-regexp">/services/</span>core<span class="hljs-regexp">/java/</span>com<span class="hljs-regexp">/android/</span>server<span class="hljs-regexp">/am/</span>StackTracesDumpHelper.java<br><span class="hljs-keyword">static</span> <span class="hljs-keyword">File</span> dumpStackTraces<span class="hljs-comment">//创建trace文件/data/anr/tmp_anr_date_.txt</span><br>    |-&gt;<span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">long</span> dumpStackTraces(String tracesFile,<span class="hljs-comment">//遍历各个PID,dump PID的堆栈信息</span><br>       |-&gt;dumpJavaTracesTombstoned<br>         |-&gt;android_os_Debug_dumpJavaBacktraceToFileTimeout<br>            |-&gt;dump_backtrace_to_file_timeout<br>               |-&gt;get_wchan_data             <span class="hljs-comment">//读出trace文件中&quot;Waiting Channels&quot; 各个线程状态信息，从/proc/PID/task/Tid/wchan中读出</span><br>               |-&gt;debuggerd_trigger_dump     <span class="hljs-comment">//入口</span><br></code></pre></td></tr></table></figure>
+<p><code>debuggerd_trigger_dump</code> 代码较长，<br>大体流程：</p>
+<ul>
+<li>将 <code>system_server</code> 进程创建一个临时文件fd:(例如:<code> data/anr/temp_anr_XXX.txt</code> )，建立一个pipe，将pipe_read保留，pipe_write传给 <code>tombstoned</code> 进程</li>
+<li>system_server 给需要 <code>dump</code> 的进程<code>pid</code> 发送<code>signal 3</code>，目的:让 <code>dump</code> 的线程 信号处理线程: <code>Signal Catcher</code> 线程，处理<code>signal 3</code> 并开始进行信息dump(主要<code>dump runtime</code>的各个数据)</li>
+<li><code>dump</code>的 <code>Signal Catcher</code> 线程dump完各个信息项(<code>Native 线程</code>，<code>java线程</code>，<code>JNI信息</code>，类加载信息，内存信息，<code>ART虚拟机信息</code>)，从<code>tombstoned</code>进程获取fd(pipe_write)写入fd文件中， <code>system_server</code> 从pipe_read读到信息将信息写入<strong>fd-anr_xx.txt</strong>中<br>anrdump图片整体流程图：<br><img src="/blog_imgs/10_Android_signal_use/8_ANR_XX_dump%E6%B5%81%E7%A8%8B.svg" srcset="/img/loading.gif" lazyload alt="f8d86329b936a10c507fb811871e4839.svg+xml"><br><strong>文字描述:</strong></li>
+</ul>
+<ol>
+<li>当发生 <code>SWT/ANR</code> 时候， <code>system_server</code> 的监控线程( <code>SWT:watchdog</code> ， <code>ANR:AnrMainProcessDumpThread</code>线程dump异常进程，<code>AnrConsumer</code>线程dump其他相关进程 )通过调用标准的接口 <code>dumpStackTraces</code> 获取进程的堆栈信息(通常是我们描述的 <strong>trace 信息</strong>)<br>1.1 system_server在<code>dumpStackTraces</code>中将会创建一个临时的文件<strong>fd</strong>(类似:<code>/data/anr/temp_anr_693426022738900412.txt</code>)。</li>
+<li><code>system_server</code> 中监控线程通过 <code>Socket</code> 向 <code>tombstoned</code> 进程发送信息。创建<strong>pipe</strong>，<code>pipe</code>的两端<code>pipe_read</code>和<code>pipe_write</code>，将<code>pipe_write</code>传给<code>tombstoned</code>进程，<code>pipe_read</code>留给自己；</li>
+<li><code>tombstoned</code>进程接收到<code>pipe_write</code>，将<code>pipe_write</code>封装为<code>fd</code>目的是传给需要<code>dump的进程</code>，trace信息由需要<code>dump的进程</code>写入，等待被dump的进程来获取该fd；</li>
+<li><code>system_server进程</code>将向需要<code>dump的进程</code>发送<strong>signal 3</strong>；</li>
+<li><code>被dump的进程</code>中信号处理线程: <code>Signal Catcher</code>， 接收到来自system_server的<code>signal 3</code> 后，向 <code>tombstoned</code> 进程获取一个临时fd(刚刚<code>system_server</code>传过来的)。然后开始dump自身进程各个线程堆栈信息，JNI信息，类加载信息等.将dump出来的信息写入fd中，信息被pipe_write写回给system_server；</li>
+<li><code>system_server</code> 从 <code>pipe_read</code> 中读取 <code>dump</code> 信息，将其写入到<strong>trace文件</strong>中。</li>
+</ol>
+<blockquote>
+<p>这里注意一下，如果我们是通过adb手动发送sig 3 给目标进程来生成trace_xx.txt文件，那么这个文件是由tombstoned进程生成的</p>
+</blockquote>
+<h2 id="9-参考"><a href="#9-参考" class="headerlink" title="9. 参考"></a>9. 参考</h2><ul>
+<li>Android 16源码</li>
+<li><a target="_blank" rel="noopener" href="https://juejin.cn/post/7418123700166639651">https://juejin.cn/post/7418123700166639651</a></li>
+</ul>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E6%9C%BA%E5%88%B6/" class="category-chain-item">机制</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/%E6%9C%BA%E5%88%B6/Signal/" class="category-chain-item">Signal</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E7%B3%BB%E7%BB%9F%E6%A6%82%E5%BF%B5%E5%8E%9F%E7%90%86/" class="print-no-link">#系统概念原理</a>
+      
+        <a href="/tags/Signal/" class="print-no-link">#Signal</a>
+      
+    </div>
+  
+</div>
+
+
+              
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/04/24/9_Profiler%E5%B7%A5%E5%85%B7%E5%88%86%E6%9E%90Android16%E8%87%AA%E5%8A%A8%E5%A1%AB%E5%85%85%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93/" title="Android16 自动填充泄露问题总结">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Android16 自动填充泄露问题总结</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/03/01/8_kernel_5_1_hang_detect_dead_lock/" title="Crash工具分析kernel 5.10 task遍历死循环持RCU锁导致Hang问题总结">
+                        <span class="hidden-mobile">Crash工具分析kernel 5.10 task遍历死循环持RCU锁导致Hang问题总结</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

@@ -1,0 +1,882 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/site_icon.png">
+  <link rel="icon" href="/main_wallpapers/site_icon_2.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#37AFE1">
+  <meta name="author" content="CubeHuang">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="类图中：Binder相关将突出介绍，时序图中：  1.按照A1–Z9这样进行函数前缀编号，Binder相关不做字母编号，使用Binder作为函数前缀，以及HAL、DRIVER层使用对应模块名作为前缀2.黄色类图代表客户端进程，绿色代表SurfaceFlinger进程  1.分析索引 我们将上面程序不相干的代码去掉，留下主要部分  1234567891011121314151617181920212">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Android SurfaceFlinger和APP交互">
+<meta property="og:url" content="https://cubehuang.github.io/2022/01/04/14_SufraceFlinger_2/">
+<meta property="og:site_name" content="Cubehuang_blog">
+<meta property="og:description" content="类图中：Binder相关将突出介绍，时序图中：  1.按照A1–Z9这样进行函数前缀编号，Binder相关不做字母编号，使用Binder作为函数前缀，以及HAL、DRIVER层使用对应模块名作为前缀2.黄色类图代表客户端进程，绿色代表SurfaceFlinger进程  1.分析索引 我们将上面程序不相干的代码去掉，留下主要部分  1234567891011121314151617181920212">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/14_SurfaceFlinger/Client1.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/14_SurfaceFlinger/Image.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/14_SurfaceFlinger/Image_1.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/14_SurfaceFlinger/get_buffer3.png.svg">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/14_SurfaceFlinger/Image_2.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/14_SurfaceFlinger/1.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/14_SurfaceFlinger/get_buffer4.png.svg">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/14_SurfaceFlinger/post_buffer2.svg">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/14_SurfaceFlinger/%E6%98%BE%E7%A4%BA%E7%B3%BB%E7%BB%9F.svg">
+<meta property="article:published_time" content="2022-01-04T07:27:28.000Z">
+<meta property="article:modified_time" content="2022-01-25T03:00:12.000Z">
+<meta property="article:author" content="CubeHuang">
+<meta property="article:tag" content="SurfaceFlinger">
+<meta property="article:tag" content="系统概念原理">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://cubehuang.github.io/blog_imgs/14_SurfaceFlinger/Client1.png">
+  
+  
+  
+  <title>Android SurfaceFlinger和APP交互 - Cubehuang_blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"cubehuang.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":["home","post","category","about","links","archive"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"left","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>CubeHuang</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/main_wallpapers/wp_1.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Android SurfaceFlinger和APP交互"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2022-01-04 15:27" pubdate>
+          2022年1月4日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          3.5k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          30 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="padding-left: 2rem; margin-right: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Android SurfaceFlinger和APP交互</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>类图中：Binder相关将突出介绍，<br>时序图中：</p>
+<blockquote>
+<p>1.按照A1–Z9这样进行函数前缀编号，Binder相关不做字母编号，使用Binder作为函数前缀，以及HAL、DRIVER层使用对应模块名作为前缀<br>2.黄色类图代表客户端进程，绿色代表SurfaceFlinger进程</p>
+</blockquote>
+<h3 id="1-分析索引"><a href="#1-分析索引" class="headerlink" title="1.分析索引"></a>1.分析索引</h3><blockquote>
+<p>我们将上面程序不相干的代码去掉，留下主要部分</p>
+</blockquote>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><code class="hljs cpp">   <span class="hljs-comment">// 创建与Surfaceflinger通信的客户端</span><br>   sp&lt;SurfaceComposerClient&gt; client = <span class="hljs-keyword">new</span> <span class="hljs-built_in">SurfaceComposerClient</span>();<br>  <br>  <span class="hljs-comment">// 创建SurfaceControl并设置名称“resize”、宽高、像素格式，红色分量使用 5 位，绿色分量使用 6 位，蓝色分量使用 5 位。</span><br>   sp&lt;SurfaceControl&gt; surfaceControl = client-&gt;<span class="hljs-built_in">createSurface</span>(<span class="hljs-built_in">String8</span>(<span class="hljs-string">&quot;resize&quot;</span>),<br>           <span class="hljs-number">160</span>, <span class="hljs-number">240</span>, PIXEL_FORMAT_RGB_565, <span class="hljs-number">0</span>);<br><br>   <span class="hljs-comment">//通过SurfaceControl获取一个Surface</span><br>   sp&lt;Surface&gt; surface = surfaceControl-&gt;<span class="hljs-built_in">getSurface</span>();<br><br>SurfaceComposerClient::Transaction t;<br><span class="hljs-comment">//设置Layer层级，数值越大层级越高</span><br>   t.<span class="hljs-built_in">setLayer</span>(surfaceControl, <span class="hljs-number">100000</span>)<br>       .<span class="hljs-built_in">apply</span>();<br><br>   ANativeWindow_Buffer outBuffer;<br>   <span class="hljs-comment">//从BufferQueue中获取获取一个Buffer</span><br>   surface-&gt;<span class="hljs-built_in">lock</span>(&amp;outBuffer, <span class="hljs-literal">NULL</span>);<br>  <br>   <span class="hljs-built_in">memset</span>(outBuffer.bits, <span class="hljs-number">0xF800</span>, bpr*outBuffer.height);<span class="hljs-comment">//填充数据</span><br>   <br>   <span class="hljs-comment">//释放buffer将buffer交还给SurfaceFlinger</span><br>   surface-&gt;<span class="hljs-built_in">unlockAndPost</span>();<br></code></pre></td></tr></table></figure>
+
+
+<blockquote>
+<p>App中:<br>包含一个或多个Surface，Surface中包含多个buffer，buffer从SurfaceFlinger中申请来</p>
+<ol>
+<li>每一个surface，对应一个surfaceControl用来管理Surface</li>
+</ol>
+<p>SurfaceFlinger中:</p>
+<ol>
+<li>使用client表示APP：SurfaceComposerClient</li>
+<li>client使用Layer表示APP中的Surface</li>
+<li>Layer中分为<ol>
+<li>生产者</li>
+<li>消费者</li>
+</ol>
+</li>
+</ol>
+</blockquote>
+<h2 id="一、服务中client创建过程"><a href="#一、服务中client创建过程" class="headerlink" title="一、服务中client创建过程"></a>一、服务中client创建过程</h2><p><strong>大体流程：</strong></p>
+<ol>
+<li>获取服务</li>
+<li>创建client</li>
+<li>创建Surface</li>
+<li>获取Surface中的buffer<ol>
+<li>查看mSlots中有无空余项</li>
+<li>若无，先生产者申请<ol>
+<li>查看自己mSlots有无空余项</li>
+<li>若无，想Gralloc HAL申请（向匿名共享内存申请）得到一个句柄fd，这将返回给应用程序</li>
+</ol>
+</li>
+<li>应用程序获取fd，mmap映射获取地址</li>
+</ol>
+</li>
+</ol>
+<h3 id="1、创建客户端过程"><a href="#1、创建客户端过程" class="headerlink" title="1、创建客户端过程"></a>1、创建客户端过程</h3><p>对应上面简化代码：<code>new SurfaceComposerClient()</code></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-keyword">class</span> <span class="hljs-title class_">c</span> : <span class="hljs-keyword">public</span> RefBase<br>&#123;...&#125;<span class="hljs-comment">//当看到RefBase首先想到-onFirstRef（）函数</span><br></code></pre></td></tr></table></figure>
+<p><strong>流程图如下：</strong><br><img src="/blog_imgs/14_SurfaceFlinger/Client1.png" srcset="/img/loading.gif" lazyload alt="611061ea2e1dad751f05bfd2bdf963b0.png"><br>该类的无参构造函数并没有做什么事情。所以大体的流程就是通过SurfaceFlinger服务创建一个Client并进行返回，返回给客户端。<br>该流程中涉及到两个和Binder相关的类：<code>ISurfaceComposer</code>和<code>ISurfaceComposerClient</code></p>
+<ol>
+<li><p><strong>ISurfaceComposer</strong><br><img src="/blog_imgs/14_SurfaceFlinger/Image.png" srcset="/img/loading.gif" lazyload alt="e843ca04e0ca18eeea71ed3c57877dcf.png"><br>客户端通过BpSurfaceComposer获取SurfaceFlinger服务，</p>
+</li>
+<li><p><strong>ISurfaceComposerClient</strong><br> <img src="/blog_imgs/14_SurfaceFlinger/Image_1.png" srcset="/img/loading.gif" lazyload alt="c92bc03bcb9aaeead034017e74384017.png"><br> 客户端通过Binder驱动让SurfaceFlinger创建一个Client并返回给客户端</p>
+</li>
+</ol>
+<h3 id="2、应用程序创建Surface的过程"><a href="#2、应用程序创建Surface的过程" class="headerlink" title="2、应用程序创建Surface的过程"></a>2、应用程序创建Surface的过程</h3><p>对应简化代码：<code>sp&lt;SurfaceControl&gt; surfaceControl = client-&gt;createSurface(String8(&quot;resize&quot;),</code><br>看一下该函数的各个参数都是什么？</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-function">sp&lt;SurfaceControl&gt; <span class="hljs-title">createSurface</span><span class="hljs-params">(<span class="hljs-type">const</span> String8&amp; name,              <span class="hljs-comment">// Surface名字</span></span></span><br><span class="hljs-params"><span class="hljs-function">                                     <span class="hljs-type">uint32_t</span> w,                       <span class="hljs-comment">// width in pixel</span></span></span><br><span class="hljs-params"><span class="hljs-function">                                     <span class="hljs-type">uint32_t</span> h,                       <span class="hljs-comment">// height in pixel</span></span></span><br><span class="hljs-params"><span class="hljs-function">                                     PixelFormat format,               <span class="hljs-comment">// pixel-format desired</span></span></span><br><span class="hljs-params"><span class="hljs-function">                                     <span class="hljs-type">uint32_t</span> flags = <span class="hljs-number">0</span>,               <span class="hljs-comment">// usage flags</span></span></span><br><span class="hljs-params"><span class="hljs-function">                                     SurfaceControl* parent = <span class="hljs-literal">nullptr</span>, <span class="hljs-comment">// parent</span></span></span><br><span class="hljs-params"><span class="hljs-function">                                     LayerMetadata metadata = LayerMetadata(), <span class="hljs-comment">// metadata</span></span></span><br><span class="hljs-params"><span class="hljs-function">                                     <span class="hljs-type">uint32_t</span>* outTransformHint = <span class="hljs-literal">nullptr</span>)</span></span>;<br><br></code></pre></td></tr></table></figure>
+<p>整体流程图：<br><img src="/blog_imgs/14_SurfaceFlinger/get_buffer3.png.svg" srcset="/img/loading.gif" lazyload alt="f6613ce141a00b7abd71db2ad48e2c29.svg+xml"></p>
+<p>   <img src="/blog_imgs/14_SurfaceFlinger/Image_2.png" srcset="/img/loading.gif" lazyload alt="702a2555fc43a85db15e3699692bca48.png"></p>
+<h5 id="大概表述："><a href="#大概表述：" class="headerlink" title="大概表述："></a>大概表述：</h5><blockquote>
+<p>对于app的每个Surface 都创建一个Layer，一个Layer中有一个BufferQueue，BufferQueue中有消费者和生产者。生产者将生产出来的数据放入Buffer中，消费者从Buffer中取出数据。生产者就是我们的应用程序，消费者就是SurfaceFlinger。BufferQueueCore中mSlots就是这个生产者和消费者之间的桥梁。</p>
+</blockquote>
+<h5 id="函数L1-createBufferQueue-："><a href="#函数L1-createBufferQueue-：" class="headerlink" title="函数L1:createBufferQueue()："></a>函数<code>L1:createBufferQueue()</code>：</h5><blockquote>
+<p>在调用该函数后<br>1.将会创建BufferQueueCore，BufferQueueCore中的重要成员：<code>mSlot</code>。<br>2.创建Producer<br>3.创建Consumer</p>
+</blockquote>
+<h5 id="函数K2和K3"><a href="#函数K2和K3" class="headerlink" title="函数K2和K3"></a>函数K2和K3</h5><blockquote>
+<p>主要将创建出来的Producer和Consumer进一步的封装<br><img src="/blog_imgs/14_SurfaceFlinger/1.png" srcset="/img/loading.gif" lazyload alt="92e528e83d87bfc39f10b7197604bce8.png"></p>
+</blockquote>
+<h5 id="返回给应用程序"><a href="#返回给应用程序" class="headerlink" title="返回给应用程序"></a>返回给应用程序</h5><p>最终将创建好的生产者代理类通过gdb等参数给应用程序，试用gdb 、handle等参数构造一个<code>SurfaceControl</code>（业务应用程序要作为生产者端）,应用程序端则使用这个SurfaceControl控制应用端的Surface。当应用程序不使用Surface可以借助这个handle告知SurfaceFlinger调用<code>mFlinger-&gt;onLayerDestroyed()</code><br>到此，应用程序已经创建Surface。下一步要获取buffer</p>
+<h3 id="3、应用程序获取buffer的过程"><a href="#3、应用程序获取buffer的过程" class="headerlink" title="3、应用程序获取buffer的过程"></a>3、应用程序获取buffer的过程</h3><p>对应着源码<code> surface-&gt;lock(&amp;outBuffer, NULL)</code></p>
+<p>应用程序APP-Client端:</p>
+<ol>
+<li>向SurfaceFlinger申请buffer</li>
+<li>获得该buffer，即获得fd</li>
+<li>mmap映射fd</li>
+</ol>
+<p>SurfaceFlinger-服务端：</p>
+<ol>
+<li>检查有没有空余mSlots项</li>
+<li>没有则Gralloc申请</li>
+</ol>
+<p>主要关注：<br>1.时序图G1红色部分：向SurfaceFlinger发出申请buffer请求，SurfaceFlinger再向HAL层Gralloc模块申请（紫色部分）<br>2. 关注绿色部分两段时许图：Gralloc模块再向驱动层的匿名共享内存申请一块内存（即：fd），然后使用handle封装fd–<code>hnd</code>，然后再封装到mSlots数组中。<br>3.G2 请求SurfaceFlinger将申请的buffer（fd）返回回来，再通过mmap映射该fd，就可以将要显示的数据放在该buffer中，具体过程通过SurfaceFlinger端的BufferQueueProducer调用requestBuffer返回G1流程中I1中创建的GraphicBuffer返回给客户端，在客户端根据返回值重新封装一个GraphicBuffer。<br><strong>大致流程图如下：</strong><br>黄色：客户端app<br>绿色：服务端SurfaceFlinger<br>浅蓝色：HAL模块<br><img src="/blog_imgs/14_SurfaceFlinger/get_buffer4.png.svg" srcset="/img/loading.gif" lazyload alt="2ebf6d34842cee0b76b4fd2c9fc101a1.svg+xml"></p>
+<h3 id="四、客户端提交Buffer流程分析"><a href="#四、客户端提交Buffer流程分析" class="headerlink" title="四、客户端提交Buffer流程分析"></a>四、客户端提交Buffer流程分析</h3><p>当客户端获取到buffer，填充要显示的数据后。如何通知SurfaceFlinger获取数据呢？<br>对应着上面的简化代码：<code> surface-&gt;unlockAndPost()</code><br><img src="/blog_imgs/14_SurfaceFlinger/post_buffer2.svg" srcset="/img/loading.gif" lazyload alt="8ebb111b2e1cfb842470876fa9b73264.svg+xml"></p>
+<blockquote>
+<p>1.客户端填充通过buffer填充完需要显示的数据<br>2.通过生产者代理通知SurfaceFlinger端生产者<br>3.最终将由SurfaceFlinger进行处理<code>R1:mFlinger-&gt;signalLayerUpdate()</code></p>
+</blockquote>
+<h3 id="五、总结"><a href="#五、总结" class="headerlink" title="五、总结"></a>五、总结</h3><p>总的流程大致如下<br>剩余的SurfaceFlinger通知显示器模块将数据显示处理流程后续再做介绍</p>
+<p>图片说明：</p>
+<ul>
+<li>函数流程按照线条颜色和圈圈标号梳理</li>
+<li>虚线表示引用或者各个结构联系</li>
+</ul>
+<p><img src="/blog_imgs/14_SurfaceFlinger/%E6%98%BE%E7%A4%BA%E7%B3%BB%E7%BB%9F.svg" srcset="/img/loading.gif" lazyload alt="602a666fc965c3b557d4c493c725a936.svg+xml"></p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E6%9C%BA%E5%88%B6/" class="category-chain-item">机制</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/%E6%9C%BA%E5%88%B6/SurfaceFlinger/" class="category-chain-item">SurfaceFlinger</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E7%B3%BB%E7%BB%9F%E6%A6%82%E5%BF%B5%E5%8E%9F%E7%90%86/" class="print-no-link">#系统概念原理</a>
+      
+        <a href="/tags/SurfaceFlinger/" class="print-no-link">#SurfaceFlinger</a>
+      
+    </div>
+  
+</div>
+
+
+              
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2022/01/28/13_Android_Input_%E6%A8%A1%E5%9D%97%E6%A6%82%E8%A7%88/" title="Android Input 模块概览">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Android Input 模块概览</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2022/01/04/14_SufraceFlinger_1/" title="Android SurfaceFlinger 模块概览">
+                        <span class="hidden-mobile">Android SurfaceFlinger 模块概览</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

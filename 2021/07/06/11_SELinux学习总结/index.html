@@ -1,0 +1,957 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/site_icon.png">
+  <link rel="icon" href="/main_wallpapers/site_icon_2.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#37AFE1">
+  <meta name="author" content="CubeHuang">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="[TOC] SELinux学习总结参考:邓凡平讲SELinux三节 还是以问题和图片的形式来总结较好,毕竟理解不深,其次是有更好的资源可以学习 问题1:什么是DAC SELinux出现之前，Linux上的安全模型叫DAC，全称是Discretionary Access Control，翻译为自主访问控制。DAC的核心思想很简单，就是：进程理论上所拥有的权限与执行它的用户的权限相同。比如，以root">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SELinux学习总结">
+<meta property="og:url" content="https://cubehuang.github.io/2021/07/06/11_SELinux%E5%AD%A6%E4%B9%A0%E6%80%BB%E7%BB%93/">
+<meta property="og:site_name" content="Cubehuang_blog">
+<meta property="og:description" content="[TOC] SELinux学习总结参考:邓凡平讲SELinux三节 还是以问题和图片的形式来总结较好,毕竟理解不深,其次是有更好的资源可以学习 问题1:什么是DAC SELinux出现之前，Linux上的安全模型叫DAC，全称是Discretionary Access Control，翻译为自主访问控制。DAC的核心思想很简单，就是：进程理论上所拥有的权限与执行它的用户的权限相同。比如，以root">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/11_SELinux/untitled_page.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/11_SELinux/Image.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/11_SELinux/Image_1.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/11_SELinux/Image_2.png">
+<meta property="article:published_time" content="2021-07-06T12:41:32.000Z">
+<meta property="article:modified_time" content="2023-04-27T09:38:36.000Z">
+<meta property="article:author" content="CubeHuang">
+<meta property="article:tag" content="SELinux">
+<meta property="article:tag" content="系统概念原理">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://cubehuang.github.io/blog_imgs/11_SELinux/untitled_page.png">
+  
+  
+  
+  <title>SELinux学习总结 - Cubehuang_blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"cubehuang.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":["home","post","category","about","links","archive"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"left","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>CubeHuang</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/main_wallpapers/wp_1.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="SELinux学习总结"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2021-07-06 20:41" pubdate>
+          2021年7月6日 晚上
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          9.4k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          79 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="padding-left: 2rem; margin-right: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">SELinux学习总结</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>[TOC]</p>
+<h2 id="SELinux学习总结"><a href="#SELinux学习总结" class="headerlink" title="SELinux学习总结"></a>SELinux学习总结</h2><p>参考:<a target="_blank" rel="noopener" href="https://blog.csdn.net/Innost/article/details/19299937#/notebooks/29547787/notes/_blank">邓凡平讲SELinux三节</a></p>
+<p>还是以问题和图片的形式来总结较好,毕竟理解不深,其次是有更好的资源可以学习</p>
+<h3 id="问题1-什么是DAC"><a href="#问题1-什么是DAC" class="headerlink" title="问题1:什么是DAC"></a>问题1:什么是DAC</h3><blockquote>
+<p>SELinux出现之前，Linux上的安全模型叫DAC，全称是Discretionary Access Control，翻译为自主访问控制。DAC的核心思想很简单，就是：<br>进程理论上所拥有的权限与执行它的用户的权限相同。比如，以root用户启动Browser，那么Browser就有root用户的权限，在Linux系统上能干任何事情。<br>显然，DAC太过宽松了，所以各路高手想方设法都要在Android系统上搞到root权限。</p>
+</blockquote>
+<p>也就是Linux中的用户用户组,可读可写可执行这一部分内容</p>
+<h3 id="问题2-什么是MAC-为什么使用它"><a href="#问题2-什么是MAC-为什么使用它" class="headerlink" title="问题2:什么是MAC,为什么使用它?"></a>问题2:什么是MAC,为什么使用它?</h3><blockquote>
+<p>DAC太宽松了,那么SELinux如何解决这个问题呢？原来，它在DAC之外，设计了一个新的安全模型，叫MAC（Mandatory Access Control），翻译为强制访问控制。MAC的处世哲学非常简单：即任何进程想在SELinux系统中干任何事情，都必须先在安全策略配置文件中赋予权限。凡是没有出现在安全策略配置文件中的权限，进程就没有该权限。<br>MAC基本管理单位是TEAC（Type Enforcement Accesc Control），然后是高一级别的Role Based Accesc Control。RBAC是基于TE的，而TE也是SELinux中最主要的部分。</p>
+</blockquote>
+<h3 id="问题3-Linux系统权限检查顺序"><a href="#问题3-Linux系统权限检查顺序" class="headerlink" title="问题3:Linux系统权限检查顺序?"></a>问题3:Linux系统权限检查顺序?</h3><blockquote>
+<p>nux系统先做DAC检查。如果没有通过DAC权限检查，则操作直接失败。通过DAC检查之后，再做MAC权限检查。</p>
+</blockquote>
+<h3 id="问题4-安全上下文-SELinux-Context的引出"><a href="#问题4-安全上下文-SELinux-Context的引出" class="headerlink" title="问题4:安全上下文:SELinux Context的引出"></a>问题4:安全上下文:SELinux Context的引出</h3><blockquote>
+<p>SELinux中，每种东西都会被赋予一个安全属性，官方说法叫Security Context。Security Context（以后用SContext表示）是一个字符串，主要由三部分组成。例如SEAndroid中，进程的SContext可通过ps -Z命令查看</p>
+</blockquote>
+<h3 id="问题5-TE文件allow介绍"><a href="#问题5-TE文件allow介绍" class="headerlink" title="问题5:TE文件allow介绍"></a>问题5:TE文件allow介绍</h3><blockquote>
+<p>rule_name source_type target_type : class perm_set</p>
+</blockquote>
+<p><img src="/blog_imgs/11_SELinux/untitled_page.png" srcset="/img/loading.gif" lazyload alt="56961b776bc7b1e4145e5bfea017fa66.png"></p>
+<h3 id="问题6-SELinux-Context具体内容"><a href="#问题6-SELinux-Context具体内容" class="headerlink" title="问题6 SELinux Context具体内容"></a>问题6 SELinux Context具体内容</h3><blockquote>
+<p>user  :  role  :  type  :  [range]</p>
+</blockquote>
+<p><img src="/blog_imgs/11_SELinux/Image.png" srcset="/img/loading.gif" lazyload alt="b191250f1773778c51a2fc53519d7376.png"></p>
+<p>对于文件来说</p>
+<ul>
+<li>user 是user之意，它代表创建这个文件的SELinux user。</li>
+<li>object_r：文件是死的东西，它没法扮演角色，所以在SELinux中，死的东西都用object_r来表示它的role。</li>
+<li>rootfs：死的东西的Type，和进程的Domain其实是一个意思。它表示root目录对应的Type是rootfs。</li>
+<li>s0：MLS的级别。</li>
+</ul>
+<p><img src="/blog_imgs/11_SELinux/Image_1.png" srcset="/img/loading.gif" lazyload alt="b21f53711cd05bfe716f7a79ef572c15.png"></p>
+<p>对于进程来说</p>
+<ul>
+<li><p>u为user的意思。SEAndroid中定义了一个SELinux用户，值为u。</p>
+</li>
+<li><p>r为role的意思。role是角色之意，它是SELinux中一种比较高层次，更方便的权限管理思路，即Role Based Access Control（基于角色的访问控制，简称为RBAC）。简单点说，一个u可以属于多个role，不同的role具有不同的权限。RBAC我们到最后再讨论。</p>
+</li>
+<li><p>init，代表该进程所属的Domain为init。MAC的基础管理思路其实不是针对上面的RBAC，而是所谓的Type Enforcement Accesc Control（简称TEAC，一般用TE表示）。对进程来说，Type就是Domain。比如init这个Domain有什么权限，都需要通过[例子1]中allow语句来说明。</p>
+</li>
+<li><p>S0和SELinux为了满足军用和教育行业而设计的Multi-Level Security（MLS）机制有关。简单点说，MLS将系统的进程和文件进行了分级，不同级别的资源需要对应级别的进程才能访问</p>
+</li>
+</ul>
+<ol>
+<li>MAC中TEAC(Type Enforcement Accesc Control):<ol>
+<li>核心主要是使用type或者domain来控制权限访问</li>
+</ol>
+</li>
+<li>MAC中RBAC(Role Based Accesc Control):<ol>
+<li>主要针对user和role做出控制</li>
+</ol>
+</li>
+</ol>
+<h3 id="问题7-Linux系统开始是如何为系统这个文件-进程-…配置SELinux-Context的"><a href="#问题7-Linux系统开始是如何为系统这个文件-进程-…配置SELinux-Context的" class="headerlink" title="问题7:Linux系统开始是如何为系统这个文件&#x2F;进程&#x2F;…配置SELinux Context的?"></a>问题7:Linux系统开始是如何为系统这个文件&#x2F;进程&#x2F;…配置SELinux Context的?</h3><blockquote>
+<p>Android系统启动后（其他Linux发行版类似），init进程会将一个编译完的安全策略文件传递给kernel以初始化kernel中的SELinux相关模块（姑且用Linux Security Module:LSM来表示它把），然后LSM可根据其中的信息给相关Object打标签。<br>提示：上述说法略有不准，先且表述如此。</p>
+</blockquote>
+<blockquote>
+<p>关于进程和文件都需要type 变换<br>关于变换的宏定义在te_macros中<br>1.进程type变换—domain_auto_trans<br>2.文件type变换—file_type_trans</p>
+</blockquote>
+<h5 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h5><blockquote>
+<p>每一个子进程在被fork出来后， 继承了父进程的安全上下文，除非自己声明进行直到进行安全上下文的转移</p>
+</blockquote>
+<h3 id="问题8-关于sepolicy-目录下的几个文件的说明"><a href="#问题8-关于sepolicy-目录下的几个文件的说明" class="headerlink" title="问题8:关于sepolicy&#x2F;目录下的几个文件的说明:"></a>问题8:关于sepolicy&#x2F;目录下的几个文件的说明:</h3><h4 id="几个重要的符号说明"><a href="#几个重要的符号说明" class="headerlink" title="几个重要的符号说明:"></a>几个重要的符号说明:</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs java">-号表示去除某项内容。<br>*号表示所有内容。<br>~号表示除了声明之外,~&#123;&#125;,除括号内容之外<br><br></code></pre></td></tr></table></figure>
+
+<h4 id="1-te-macros"><a href="#1-te-macros" class="headerlink" title="1. te_macros"></a>1. te_macros</h4><blockquote>
+<p>如名字一样:te_宏,即定义了.te文件中的各个宏例如进程&#x2F;文件type变换,一些限制的宏<br>这个文件主要定义一些宏，例如里面有一些设置属性的宏，如果给属性设置Selinux context 可以直接使用里面的宏， system_internal_prop(name)</p>
+</blockquote>
+<p>再例如，某些进行想要发布服务则可以直接使用add_service()<br>system&#x2F;sepolicy&#x2F;public&#x2F;netd.te</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs stylus"><span class="hljs-function"><span class="hljs-title">add_service</span><span class="hljs-params">(netd, netd_service)</span></span><br><span class="hljs-function"><span class="hljs-title">add_service</span><span class="hljs-params">(netd, dnsresolver_service)</span></span><br><span class="hljs-function"><span class="hljs-title">add_service</span><span class="hljs-params">(netd, mdns_service)</span></span><br><span class="hljs-comment">//就说明这个nted进程赋予注册这个三个服务的权限</span><br></code></pre></td></tr></table></figure>
+<p>等同于</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs routeros">allow netd netd_service:service_manager &#123; <span class="hljs-built_in">add</span> <span class="hljs-built_in">find</span> &#125;;<br>allow netd dnsresolver_service:service_manager &#123; <span class="hljs-built_in">add</span> <span class="hljs-built_in">find</span> &#125;;<br>allow netd mdns_service:service_manager &#123; <span class="hljs-built_in">add</span> <span class="hljs-built_in">find</span> &#125;;<br><br><br></code></pre></td></tr></table></figure>
+
+
+
+<h4 id="2-global-macros"><a href="#2-global-macros" class="headerlink" title="2. global_macros"></a>2. global_macros</h4><blockquote>
+<p>定义了一些文件&#x2F;目录&#x2F;socket 访问的宏,主要为方便权限配置<br>例如file的r_file_perms包括<br>{ getattr open read ioctl lock map watch watch_reads }</p>
+</blockquote>
+<h4 id="3-security-classes"><a href="#3-security-classes" class="headerlink" title="3. security_classes"></a>3. security_classes</h4><blockquote>
+<p>该文件主要定义,各种Linux系统中SELinux Context对象<br>例如file,dir,process等<br>型如:<br>class filesystem<br>class file<br>class dir</p>
+</blockquote>
+<h4 id="4-access-vectors"><a href="#4-access-vectors" class="headerlink" title="4. access_vectors"></a>4. access_vectors</h4><blockquote>
+<p>该文件定义了各种访问Linux系统中SELinux Context对象的操作<br>例如file</p>
+</blockquote>
+<p>common file<br>{<br> ioctl<br> read<br> write<br> create<br> getattr<br> setattr<br> lock<br> …<br> }</p>
+<h4 id="5-attributes"><a href="#5-attributes" class="headerlink" title="5. attributes"></a>5. attributes</h4><blockquote>
+<p>定义了整个te文件中的type组</p>
+</blockquote>
+<h4 id="6-property-contexts"><a href="#6-property-contexts" class="headerlink" title="6. property_contexts"></a>6. property_contexts</h4><blockquote>
+<p>该文件,主要是给各个属性()设置标签(SELinux Context)<br>例如:audio类的属性<br>persist.audio.          u:object_r:audio_prop:s0</p>
+</blockquote>
+<h4 id="7-file-contexts"><a href="#7-file-contexts" class="headerlink" title="7. file_contexts"></a>7. file_contexts</h4><blockquote>
+<p>该文件主要是给Linux系统中各个文件设置默认标签(SELinux Context)<br>例如:&#x2F;data&#x2F;app<br>&#x2F;data&#x2F;app(&#x2F;.*)?                       u:object_r:apk_data_file:s0</p>
+</blockquote>
+<p>如果你要为新文件设置或更改SELinux Context,记得使用它</p>
+<h4 id="8-service-contexts"><a href="#8-service-contexts" class="headerlink" title="8. service_contexts"></a>8. service_contexts</h4><blockquote>
+<p>该文件主要给系统中各个服务打上标签(SELinux Context)<br>例如:SurfaceFlinger<br>SurfaceFlinger                            u:object_r:surfaceflinger_service:s0<br>或者打点服务或者greelogserver等</p>
+</blockquote>
+<p>如果你要为新属性设置SELinux Context,记得使用它</p>
+<h4 id="9-seapp-contexts"><a href="#9-seapp-contexts" class="headerlink" title="9. seapp_contexts"></a>9. seapp_contexts</h4><blockquote>
+<p>该文件主要给app设置标签(SELinux Context),具体可以看该文件中的注解<br>例如:traceur 应用<br>user&#x3D;_app seinfo&#x3D;platform name&#x3D;com.android.traceur domain&#x3D;traceur_app<br>type&#x3D;app_data_file levelFrom&#x3D;all<br>待会再看看</p>
+</blockquote>
+<h4 id="10-user"><a href="#10-user" class="headerlink" title="10. user"></a>10. user</h4><blockquote>
+<p>该文件主要是规定了Android系统中user和role<br>在我们使用”ls -aZ”发现基本上系统中不管进程还是文件还是其他,user &#x3D; u  role &#x3D; r<br>其次rang也是设置为: s0<br>文件内容为:<br>user u roles { r } level s0 range s0 - mls_systemhigh;</p>
+</blockquote>
+<h4 id="11-roles-decl"><a href="#11-roles-decl" class="headerlink" title="11. roles_decl"></a>11. roles_decl</h4><blockquote>
+<p>声明一个role为 r<br>文件内容为<br>role r;</p>
+</blockquote>
+<h4 id="12-genfs-contexts"><a href="#12-genfs-contexts" class="headerlink" title="12.genfs_contexts"></a>12.genfs_contexts</h4><blockquote>
+<p>新增文件配置主要包含虚拟文件配置写入 genfs_contexts 文件和磁盘文件配置写入 file_contexts 文件。</p>
+</blockquote>
+<h4 id="13-常见的-te文件说明"><a href="#13-常见的-te文件说明" class="headerlink" title="13.常见的.te文件说明:"></a>13.常见的.te文件说明:</h4><h5 id="1-property-te"><a href="#1-property-te" class="headerlink" title="1.property.te"></a>1.property.te</h5><p>该文件主要设置各个type的访问控制和定义属性的SELinux Context的type,定义完如果要为新属性设置该type记得使用property_context文件<br>例如:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs java">neverallow &#123; coredomain -init &#125; &#123;<br>  vendor_property_type<br>  -vendor_public_property_type<br>&#125;:property_service set;<br></code></pre></td></tr></table></figure>
+
+<p>说明:coredomain中只允许init (type)的主体设置除vendor_public_property_type的所有vendor_property_type的属性文件</p>
+<h5 id="2-file-te"><a href="#2-file-te" class="headerlink" title="2.file.te"></a>2.file.te</h5><p>该文件定义了各种各样文件的 SELinux Context的type<br>要是你要为定义一个新type记得使用它,如果要为该文件设置该type则在file_context文件中设置即可<br>例如:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs java"># /data/data subdirectories - priv-app sandboxes<br>type privapp_data_file, file_type, data_file_type, core_data_file_type;<br></code></pre></td></tr></table></figure>
+<h5 id="3-service-te"><a href="#3-service-te" class="headerlink" title="3.service.te"></a>3.service.te</h5><p>该文件主要定义服务SELinux Context的type<br>要是你新写了一个服务,要新定义服务相关SELinux Context的type记得使用它,记得在service_context文件中设置该服务SELinux Context<br>例如:AMS,ATMS</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs java">type activity_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;<br>type activity_task_service, app_api_service, ephemeral_app_api_service, system_server_service, service_manager_type;<br><br></code></pre></td></tr></table></figure>
+
+<h5 id="4-xxxx-te"><a href="#4-xxxx-te" class="headerlink" title="4.xxxx.te"></a>4.xxxx.te</h5><p>这些文件就是一些定义具体的type,文件内容包括了,type的定义 以及该type能访问的各种权限控制</p>
+<h4 id="问题8-总结"><a href="#问题8-总结" class="headerlink" title="问题8.总结"></a>问题8.总结</h4><blockquote>
+<p>通过上面的解释:我们其实可以大体看到一些信息</p>
+</blockquote>
+<p>从名字上看<br>service.te<br>file.te<br>property.te<br>这三个文件都是—定义相关的————————xxxx.te定义type相关的</p>
+<p>service_contexts<br>file_contexts<br>property_contexts<br>这三个文件又是,给对应内容设置SELinux context的———–xxx_contexts,设置SELinux Context的,只不过目前只包括几个文件</p>
+<p>其次的话.<br>xxx_macros文件——是定义宏的</p>
+<h3 id="问题9-SELinux编译相关"><a href="#问题9-SELinux编译相关" class="headerlink" title="问题9.SELinux编译相关"></a>问题9.SELinux编译相关</h3><p>说了那么多东西,其实最终还是要编译打包到一个文件,我看的时候比较疑问的就是sepolicy&#x2F;public,sepolicy&#x2F;private者些目录了,后面的话,我再他们根目录下的.mk文件发现了线索</p>
+<p><img src="/blog_imgs/11_SELinux/Image_2.png" srcset="/img/loading.gif" lazyload alt="3d0e70e34bfdd218d4623dada6234ab8.png"></p>
+<p>文件中有一些英文注释,还是告诉了我们很多信息的</p>
+<h4 id="1-Android-mk注释解释如下"><a href="#1-Android-mk注释解释如下" class="headerlink" title="1.Android.mk注释解释如下"></a>1.Android.mk注释解释如下</h4><ol>
+<li>主要告诉我们这几个目录是如何区分</li>
+<li>是怎么编译的</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><code class="hljs java"><br><span class="hljs-comment">//system/sepolicy/Android.mk</span><br>sepolicy 现在分为多个部分：<br><br> <span class="hljs-keyword">public</span> - 导出的策略，非平台策略开发人员可以在其上编写附加策略。<br> 类型和属性被版本化并包含在交付的非平台策略中，该策略将与平台策略相结合。<br><br> <span class="hljs-keyword">private</span> - 平台功能所需的仅平台策略，但不会导出给供应商策略开发人员，因此可能不存在。<br><br>vendor  - 供应商功能所需的仅限供应商的策略。该策略可以引用公共策略，但不能引用私有策略。<br>此策略适用于从核心/非供应商树生成并放置到供应商分区中的组件。<br><br> mapping - 这包含策略语句，将先前版本的公共策略中公开的属性映射到此策略中使用的具体类型，以确保来自旧平台版本的公共策略的策略目标属性继续工作。<br><br># 设备的构建过程：<br># <span class="hljs-number">1</span>) 将策略转换为 CIL：<br># - <span class="hljs-keyword">private</span> + <span class="hljs-keyword">public</span> 平台政策到 CIL<br># - 将文件映射到 CIL（应该已经是 CIL 形式）<br># - 非平台公共政策到 CIL<br># - 非平台公共 + 私人政策到 CIL<br># <span class="hljs-number">2</span>) 归因策略<br># - 运行脚本，该脚本采用非平台公共和非平台组合的私有 + 公共策略，并生成属性化和版本化的非平台策略<br># <span class="hljs-number">3</span>) 合并策略文件<br># - 结合映射、平台和非平台策略。<br># - 编译输出二进制策略文件<br></code></pre></td></tr></table></figure>
+<h4 id="2-Android-mk继续看"><a href="#2-Android-mk继续看" class="headerlink" title="2.Android.mk继续看"></a>2.Android.mk继续看</h4><p>往下我看到了我之前还疑惑的一个地方出现了<br>就是作为我们厂商最喜欢用到的三个宏在sepolicy.mk中使用</p>
+<ul>
+<li>BOARD_SEPOLICY_DIRS</li>
+<li>BOARD_PLAT_PRIVATE_SEPOLICY_DIR</li>
+<li>BOARD_PLAT_PUBLIC_SEPOLICY_DIR</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-comment">//system/sepolicy/Android.mk</span><br>PLAT_PUBLIC_POLICY := $(LOCAL_PATH)/<span class="hljs-keyword">public</span><br>PLAT_PRIVATE_POLICY := $(LOCAL_PATH)/<span class="hljs-keyword">private</span><br>PLAT_VENDOR_POLICY := $(LOCAL_PATH)/vendor<br>REQD_MASK_POLICY := $(LOCAL_PATH)/reqd_mask<br>SYSTEM_EXT_PUBLIC_POLICY := $(BOARD_PLAT_PUBLIC_SEPOLICY_DIR)<span class="hljs-comment">//出现1</span><br>SYSTEM_EXT_PRIVATE_POLICY := $(BOARD_PLAT_PRIVATE_SEPOLICY_DIR)<span class="hljs-comment">//出现2,待会再研究</span><br>PRODUCT_PUBLIC_POLICY := $(PRODUCT_PUBLIC_SEPOLICY_DIRS)<br>PRODUCT_PRIVATE_POLICY := $(PRODUCT_PRIVATE_SEPOLICY_DIRS)<br><br><span class="hljs-comment">//还有一个BOARD_SEPOLICY_DIRS在下面</span><br>#BOARD_SEPOLICY_DIRS 之前用于供应商/odm sepolicy 定制。<br>#它已被 BOARD_VENDOR_SEPOLICY_DIRS（强制）和 BOARD_ODM_SEPOLICY_DIRS（可选）取代。<br>#BOARD_SEPOLICY_DIRS 仍然允许向后兼容，它将被合并到 BOARD_VENDOR_SEPOLICY_DIRS。<br><br>ifdef BOARD_SEPOLICY_DIRS<br>BOARD_VENDOR_SEPOLICY_DIRS += $(BOARD_SEPOLICY_DIRS)<br>endif<br><br><br><span class="hljs-comment">//那么BOARD_VENDOR_SEPOLICY_DIRS又是什么,没找到说明,结果看了一下README文件都是在说它,</span><br><span class="hljs-comment">//看来Google喜欢把更新的东西放在README文件中做说明</span><br></code></pre></td></tr></table></figure>
+<h4 id="3-README文件解读-BOARD-VENDOR-SEPOLICY-DIRS"><a href="#3-README文件解读-BOARD-VENDOR-SEPOLICY-DIRS" class="headerlink" title="3.README文件解读-BOARD_VENDOR_SEPOLICY_DIRS"></a>3.README文件解读-BOARD_VENDOR_SEPOLICY_DIRS</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><code class="hljs java">此目录包含核心 Android SELinux 策略配置。<br>它定义了所有设备通用的 AOSP 服务和应用程序的域和类型。<br>  特定于设备的策略应放在单独的 device/&lt;vendor&gt;/&lt;board&gt;/sepolicy 子目录下并链接<br>进入策略编译，如下所述。<br><br>策略生成：<br><br>此外，可以将每个设备的策略文件添加到策略构建中。这些文件的每一行都应该包括以换行符 (<span class="hljs-number">0x0A</span>) 结尾的最后一行。<br>这将允许在构建过程调用 m4(<span class="hljs-number">1</span>) 宏处理器时连接和处理文件。<br><br>添加换行符还会使中间文本文件在调试构建失败时更易于阅读。<br>  文件、服务和属性上下文文件集将自动在每个文件之间插入一个换行符，因为这些是常见的故障点。<br><br>这些设备策略文件可以通过使用 BOARD_VENDOR_SEPOLICY_DIRS 变量进行配置。<br>  此变量应在设备或供应商目录中的 BoardConfig.mk 文件中设置。<br><br>BOARD_VENDOR_SEPOLICY_DIRS 包含用于搜索其他策略文件的目录列表。<br> 此列表中的顺序很重要。<br>例如，如果您在 BOARD_VENDOR_SEPOLICY_DIRS 搜索路径中有 <span class="hljs-number">2</span> 个 widget.te 文件实例，那么找到的第一个（在包含该文件的第一个搜索目录中）将首先连接。<br>审查 out/target/product/&lt;device&gt;/obj/ETC/sepolicy_intermediates/policy.conf<br>将有助于解决订购问题。<br><br>示例 BoardConfig.mk 用法：<br>从 Tuna 设备 BoardConfig.mk, device/samsung/tuna/BoardConfig.mk<br>BOARD_VENDOR_SEPOLICY_DIRS += device/samsung/tuna/sepolicy<br><br><br></code></pre></td></tr></table></figure>
+<p><strong>BOARD_VENDOR_SEPOLICY_DIRS 包含用于搜索其他策略文件的目录列表。<br> 此列表中的顺序很重要。</strong></p>
+<p> 通过全局搜索来看,暂时还没有使用这个宏,编译相关暂时不分析,研究不深</p>
+<h3 id="10-常用命令"><a href="#10-常用命令" class="headerlink" title="10.常用命令"></a>10.常用命令</h3><h4 id="1-getenforce和setenforce命令"><a href="#1-getenforce和setenforce命令" class="headerlink" title="1.getenforce和setenforce命令"></a>1.getenforce和setenforce命令</h4><p> 设置SELinux是严格模式还是宽容模式<br> setenforce 0表示设置宽容模式</p>
+<h4 id="2-chcon命令"><a href="#2-chcon命令" class="headerlink" title="2.chcon命令"></a>2.chcon命令</h4><p> 用来设置SELinux context</p>
+<p> chcon type 文件</p>
+<h4 id="3-restorecon命令"><a href="#3-restorecon命令" class="headerlink" title="3.restorecon命令"></a>3.restorecon命令</h4><p> 恢复文件或者目录的SELinux Context的系统原始设置</p>
+<h3 id="11-SELinux模块编译"><a href="#11-SELinux模块编译" class="headerlink" title="11 SELinux模块编译"></a>11 SELinux模块编译</h3><figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs stylus"><span class="hljs-selector-tag">source</span> build/envsetup<span class="hljs-selector-class">.sh</span><br>lunch xx<br>make selinux_policy<br><span class="hljs-comment">//以上即可</span><br></code></pre></td></tr></table></figure>
+<p>生成文件在:</p>
+<blockquote>
+<p>1.android\out\target\product\xxxx\system\system_ext\etc的selinux文件中<br>2.android\out\target\product\K82172CA1\vendor\etc的selinux文件中<br>3….<br>生成文件就在上面目录中,看该的文件属于上面分区</p>
+</blockquote>
+<p>然后adb push selinux &#x2F;vendor&#x2F;etc&#x2F;  下面即可</p>
+<p>最后:</p>
+<blockquote>
+<p>adb shell restorecon &#x2F;data&#x2F;<br>SELinux: Loaded file_contexts</p>
+</blockquote>
+<p>cp：会重新生成安全上下文；<br>mv：安全上下文则不变。<br>id -Z显示了你的shell的安全上下文；<br>ps -Z检查进程的安全上下文；<br>ls -Z检查文件、目录的安全上下文；</p>
+<h3 id="12-问题"><a href="#12-问题" class="headerlink" title="12 问题"></a>12 问题</h3><h4 id="12-1-问题一-特殊selinux权限配置"><a href="#12-1-问题一-特殊selinux权限配置" class="headerlink" title="12.1 问题一 特殊selinux权限配置"></a>12.1 问题一 特殊selinux权限配置</h4><p> 对于ioctl 这个权限， 在AndroidQ之前我们如果缺 ioctl权限 直接配置 allow scontext.type tcontext.type：class ioctl 即可，但是再Android Q后，即使加了这个权限也还是会报没有这个权限。<br>Google在Android Q上增强了对ioctl的审查，除保持对ioctl的审查&#x2F;授权之外，对具体的ioctlcmd也需要进一步地审查&#x2F;授权。<br>对于ioctl 这个权限又做了进一步的细分。对于ioctl的细分定义在 system&#x2F;sepolicy&#x2F;microdroid&#x2F;system&#x2F;public&#x2F;ioctl_defines<br>对于我今天遇到的这个问题则是，我查看看原生的目录下这个权限确实是已经配了，<code>allow system_server apex_system_server_data_file:file create_file_perms;</code><br>问题报log:</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs routeros">avc: denied &#123; ioctl &#125; <span class="hljs-keyword">for</span> <span class="hljs-attribute">path</span>=<span class="hljs-string">&quot;/data/misc_de/0/apexdata/com.android.permission/runtime-permissions.xmlsec.bak&quot;</span> <span class="hljs-attribute">dev</span>=<span class="hljs-string">&quot;dm-42&quot;</span> <span class="hljs-attribute">ino</span>=12536 <span class="hljs-attribute">ioctlcmd</span>=0x6685 <span class="hljs-attribute">scontext</span>=u:r:system_server:s0 <span class="hljs-attribute">tcontext</span>=u:object_r:apex_system_server_data_file:s0 <span class="hljs-attribute">tclass</span>=file <span class="hljs-attribute">permissive</span>=0  <br></code></pre></td></tr></table></figure>
+
+
+<blockquote>
+<p> define(<code>FS_IOC_ENABLE_VERITY&#39;, </code>0x6685’)</p>
+</blockquote>
+<p>配法则和之前不太相同，但是类似<br>allowxperm scontext.type tcontext.type：class  ioctl 细分的权限，对于这个例子可以是</p>
+<p>* <code>allowxperm system_server apex_system_server_data_file:ioctl 0x6685</code><br>* <code>allowxperm system_server apex_system_server_data_file:ioctl {FS_IOC_ENABLE_VERITY}</code></p>
+<p>这类问题只需关注到ioctlcmd 即可，能在ioctl_defines 查到对应的名称即可<br>关于 allowxperm 的定义在te_macros</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E6%9C%BA%E5%88%B6/" class="category-chain-item">机制</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/%E6%9C%BA%E5%88%B6/SELinux/" class="category-chain-item">SELinux</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E7%B3%BB%E7%BB%9F%E6%A6%82%E5%BF%B5%E5%8E%9F%E7%90%86/" class="print-no-link">#系统概念原理</a>
+      
+        <a href="/tags/SELinux/" class="print-no-link">#SELinux</a>
+      
+    </div>
+  
+</div>
+
+
+              
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2022/01/04/14_SufraceFlinger_1/" title="Android SurfaceFlinger 模块概览">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Android SurfaceFlinger 模块概览</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2019/07/22/hello-world2/" title="Hello World">
+                        <span class="hidden-mobile">Hello World</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

@@ -1,0 +1,900 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/site_icon.png">
+  <link rel="icon" href="/main_wallpapers/site_icon_2.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#37AFE1">
+  <meta name="author" content="CubeHuang">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="1. 问题背景 平台：MTK 平台，arm64 Android版本：Android V 日志：MTK hang DB 文件  我司最近几个项目上遇到几个 Hang 问题（MTK Hang_Detect机制）：  S+V 项目上遇到一次 V+V 项目上遇到两次总的来说都是 V 基线项目上出现的问题。  根因简述：system_server进程中某模块自定义信号，以及信号处理函数，处理函数中使用非as">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Hang-system_server kernel_futex阻塞问题总结">
+<meta property="og:url" content="https://cubehuang.github.io/2025/05/11/18_async-signal-safe_futex_hang/">
+<meta property="og:site_name" content="Cubehuang_blog">
+<meta property="og:description" content="1. 问题背景 平台：MTK 平台，arm64 Android版本：Android V 日志：MTK hang DB 文件  我司最近几个项目上遇到几个 Hang 问题（MTK Hang_Detect机制）：  S+V 项目上遇到一次 V+V 项目上遇到两次总的来说都是 V 基线项目上出现的问题。  根因简述：system_server进程中某模块自定义信号，以及信号处理函数，处理函数中使用非as">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/18_async-signal-safe_futex_hang/Image.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/18_async-signal-safe_futex_hang/Image_1.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/18_async-signal-safe_futex_hang/Image_2.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/18_async-signal-safe_futex_hang/Image_3.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/18_async-signal-safe_futex_hang/Image_4.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/18_async-signal-safe_futex_hang/Image_5.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/18_async-signal-safe_futex_hang/Image_6.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/18_async-signal-safe_futex_hang/Image_7.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/18_async-signal-safe_futex_hang/Image_8.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/18_async-signal-safe_futex_hang/Image_9.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/18_async-signal-safe_futex_hang/Image_10.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/18_async-signal-safe_futex_hang/Image_11.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/18_async-signal-safe_futex_hang/Image_12.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/18_async-signal-safe_futex_hang/Image_13.png">
+<meta property="article:published_time" content="2025-05-11T09:01:30.000Z">
+<meta property="article:modified_time" content="2025-05-16T06:11:32.000Z">
+<meta property="article:author" content="CubeHuang">
+<meta property="article:tag" content="Hung">
+<meta property="article:tag" content="问题总结">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://cubehuang.github.io/blog_imgs/18_async-signal-safe_futex_hang/Image.png">
+  
+  
+  
+  <title>Hang-system_server kernel_futex阻塞问题总结 - Cubehuang_blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"cubehuang.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":["home","post","category","about","links","archive"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"left","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>CubeHuang</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/main_wallpapers/wp_1.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Hang-system_server kernel_futex阻塞问题总结"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2025-05-11 17:01" pubdate>
+          2025年5月11日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          6.3k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          53 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="padding-left: 2rem; margin-right: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Hang-system_server kernel_futex阻塞问题总结</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h2 id="1-问题背景"><a href="#1-问题背景" class="headerlink" title="1. 问题背景"></a>1. 问题背景</h2><ul>
+<li><strong>平台</strong>：MTK 平台，arm64</li>
+<li><strong>Android版本</strong>：Android V</li>
+<li><strong>日志</strong>：MTK hang DB 文件</li>
+</ul>
+<p>我司最近几个项目上遇到几个 <strong>Hang</strong> 问题（<code>MTK Hang_Detect</code>机制）：</p>
+<ul>
+<li>S+V 项目上遇到一次</li>
+<li>V+V 项目上遇到两次<br>总的来说都是 V 基线项目上出现的问题。</li>
+</ul>
+<p><strong>根因简述</strong>：<code>system_server</code>进程中某模块自定义信号，以及信号处理函数，处理函数中使用非<code>async-signal-safe</code>方法，导致该模块线程单线程死锁，从而导致<code>watchdog</code>线程正常轮转过程无法获取锁出现阻塞，进而无法 <strong>kick</strong> 到内核<code>Hang_Detect</code>模块，从而触发 <strong>Hang</strong> 重启。</p>
+<h2 id="2-问题分析"><a href="#2-问题分析" class="headerlink" title="2. 问题分析"></a>2. 问题分析</h2><h3 id="2-1-初步排查"><a href="#2-1-初步排查" class="headerlink" title="2.1 初步排查"></a>2.1 初步排查</h3><p>**问题排查前期：**出现的 <strong>Hang</strong> 问题虽然有 db 文件，但是 db 文件解开没有<code>fulldump</code>文件（<code>MTK:SYS_COREDUMP</code>文件）。<br>只有<code>minidump</code>（<code>MTK:SYS_MINI_RDUMP</code>）。</p>
+<p><strong>SYS_COREDUMP</strong>：完整版内存快照转储文件，保留 DRAM 上基本上所有的信息。</p>
+<p><strong>SYS_MINI_RDUMP</strong>：精简版内存快照，只保存 CPU 寄存器信息以及其他每个寄存器附近的一段内存信息。<br>通过排查解析后的 db 文件，在 <code>db.fatal.00.HANG.dbg.DEC</code> 中 <strong>kernel</strong> 日志发现如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs c">[<span class="hljs-number">59536.207166</span>][  T170]  [Hang_Detect] hang_detect thread counts down <span class="hljs-number">4</span>:<span class="hljs-number">10</span>, status <span class="hljs-number">1.</span><br>[<span class="hljs-number">59566.928761</span>][  T170]  [Hang_Detect] hang_detect thread counts down <span class="hljs-number">3</span>:<span class="hljs-number">10</span>, status <span class="hljs-number">1.</span><br>[<span class="hljs-number">59597.648417</span>][  T170]  [Hang_Detect] hang_detect thread counts down <span class="hljs-number">2</span>:<span class="hljs-number">10</span>, status <span class="hljs-number">1.</span><br>[<span class="hljs-number">59628.367119</span>][  T170]  [Hang_Detect] hang_detect thread counts down <span class="hljs-number">1</span>:<span class="hljs-number">10</span>, status <span class="hljs-number">1.</span><br>[<span class="hljs-number">59659.087334</span>][  T170]  [Hang_Detect] hang_detect thread counts down <span class="hljs-number">0</span>:<span class="hljs-number">10</span>, status <span class="hljs-number">1.</span><br>[<span class="hljs-number">59689.808445</span>][  T170]  [Hang_Detect] hang_detect thread counts down <span class="hljs-number">-1</span>:<span class="hljs-number">10</span>, status <span class="hljs-number">1.</span><br>[<span class="hljs-number">59690.391912</span>][  T170]  [Hang_Detect] we  triger DB.<br></code></pre></td></tr></table></figure>
+<p><strong>10</strong>：表明Hang出现的场景为：<strong>system_server</strong> 中 <strong>watchdog线程</strong>是在正常轮转过程中出现的卡死，并非是SWT场景。</p>
+<p>目前遇到的只有<code>minidump</code>文件，只能通过 GAT 工具（MTK 解析 DB 工具）解析出部分信息：通过排查<code>SYS_HANG_DETECT_RAW</code>。</p>
+<ul>
+<li><code>SYS_HANG_DETECT_RAW</code>：该文件是 MTK 平台排查 Hang 问题的重要文件，该文件记录了出现异常前<strong>30s</strong>前后的系统线程的堆栈信息。<br>根据 Hang 的监测场景此题我们检索”<code>system_server|watchdog|dump backtrace</code>“，下面我只列出了<strong>system_server</strong>中<strong>watchdog</strong>的线程信息。<br>如下：</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs c">行 <span class="hljs-number">4</span>:     dump backtrace start: <span class="hljs-number">59659087604084</span><br>行 <span class="hljs-number">11160</span>: watchdog        S <span class="hljs-number">14487.269049</span> <span class="hljs-number">1752</span> <span class="hljs-number">4447</span> <span class="hljs-number">6956</span> <span class="hljs-number">0x40400140</span> <span class="hljs-number">0x4000800</span> <span class="hljs-number">1583</span> <span class="hljs-number">6</span> <span class="hljs-number">120</span> <span class="hljs-number">59352879915046</span><br>行 <span class="hljs-number">19998</span>: dump backtrace end: <span class="hljs-number">59659280896700</span><br>行 <span class="hljs-number">20000</span>: dump backtrace start: <span class="hljs-number">59689808718004</span><br>行 <span class="hljs-number">31160</span>: watchdog        S <span class="hljs-number">14487.269049</span> <span class="hljs-number">1752</span> <span class="hljs-number">4447</span> <span class="hljs-number">6956</span> <span class="hljs-number">0x40400140</span> <span class="hljs-number">0x4000800</span> <span class="hljs-number">1583</span> <span class="hljs-number">6</span> <span class="hljs-number">120</span> <span class="hljs-number">59352879915046</span><br></code></pre></td></tr></table></figure>
+<p>通过上面的信息我们得知<strong>watchdog</strong>线程出现长时间<strong>S</strong>状态未被调度的情况（<strong>59352879915046</strong> 30s 前后没有发生变化，说明未被调度过）。</p>
+<p>通过<code>hang_SWT_analyze</code>工具，配对正确的<code>symbols</code>得到下面的堆栈：</p>
+<blockquote>
+<p>（from：MTK hang 分析工具，该工具比较轻量化，能将堆栈中的信息结合 symbols 信息将 system_server 主线程和 watchdog 线程的用户态堆栈打印出来，但是也存在缺陷。）</p>
+</blockquote>
+<p><img src="/blog_imgs/18_async-signal-safe_futex_hang/Image.png" srcset="/img/loading.gif" lazyload alt="626fac1a461f3ae0300ded1a7791f273.png"></p>
+<p>从中能看到<strong>watchdog</strong>线程在轮转的过程中，会使用蓝色部分<code>com_mediatek_exceptionlog_SFMatter</code>打印 log（这个函数也是和 MTK Hang_Detect 机制相关，监测 SF 进程的，此处我们暂不深入）。<br><code>watchdog</code>线程打印日志的过程无法获取<code>futex锁</code>，并且我们能看到内核态的堆栈也是阻塞在等<code>futex锁</code>的流程。</p>
+<ul>
+<li>此种情况说明：<code>system_server</code>中，关于日志输出这一模块存在锁竞争的情况。</li>
+</ul>
+<p>并且能看到<code>system_server</code>主线程也是如此等<code>futex锁</code>。很遗憾这个工具只解析出几个线程的堆栈，并且堆栈均是在等<code>futex</code>锁。看不出哪个线程持锁导致异常。</p>
+<ol>
+<li>异常模块：<code>system_server</code>日志输出模块</li>
+<li>持锁异常，持<code>锁 owner</code>未知。（有 fulldump 的情况下，可以导出<code>system_server</code>的<code>coredump</code>通过 gdb 单独分析<code>system_server</code>进程用户态的锁情况）</li>
+</ol>
+<h4 id="2-1-1-下一步排查计划"><a href="#2-1-1-下一步排查计划" class="headerlink" title="2.1.1 下一步排查计划"></a>2.1.1 下一步排查计划</h4><ol>
+<li>根据当前的分析只能去排查近期日志模块是否有相关可疑的修改。</li>
+<li>使用开启<code>fulldump</code>版本进行压测（目前只出现两次，复现概率低，且无明确复现路径，未投入大量机器压测）。</li>
+</ol>
+<h3 id="2-2-找出持有-futex-锁的-owner"><a href="#2-2-找出持有-futex-锁的-owner" class="headerlink" title="2.2 找出持有 futex 锁的 owner"></a>2.2 找出持有 futex 锁的 owner</h3><p>刚好我司另外一个项目也出现一个<code>hang</code>问题，和之前分析的 Hang 问题一致，并且日志有<code>fulldump</code>，是否能从<code>system_server的coredump</code>中找到持锁信息？</p>
+<h3 id="2-3-导出-system-server-core-文件"><a href="#2-3-导出-system-server-core-文件" class="headerlink" title="2.3 导出 system_server core 文件"></a>2.3 导出 system_server core 文件</h3><p>如果存在<strong>SYS_COREDUMP</strong>并且相匹配的<strong>vmlinux</strong>，我们可以通过<strong>MTK</strong>平台提供的<code>KE/NE</code>解析工具的导出<strong>core</strong>文件功能将<strong>system_server</strong>进程的<strong>core</strong>文件导出。</p>
+<p>另外一种方式是使用<strong>crash</strong>工具加载插件的方式将<strong>system_server</strong>的<strong>core</strong>文件导出。</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs stylus">─ db<span class="hljs-selector-class">.fatal</span>.<span class="hljs-number">00</span><span class="hljs-selector-class">.HANG</span><span class="hljs-selector-class">.dbg</span>.DEC/     <br>  ├── scrutils/<br>  │   └── cmmsym<span class="hljs-selector-class">.elf</span><br>  ├── <span class="hljs-attribute">src</span>/                      <br>  ├── symbols/<br>  │   └── vmlinux<br>  │<br>  ├── hang_process_sort<span class="hljs-selector-class">.txt</span><br>  ├── hang_process_sort1<span class="hljs-selector-class">.txt</span><br>  ├── SYS_ANDROID_LOG_ALL<br>  ├── SYS_COREDUMP<br>  ├── SYS_KERNEL_LOG<br>  ├── SYS_LAST_KMSG<br>  ├── SYS_HANG_DETECT_RAW<br><br></code></pre></td></tr></table></figure>
+<p><img src="/blog_imgs/18_async-signal-safe_futex_hang/Image_1.png" srcset="/img/loading.gif" lazyload alt="0eb79c4b71891d9b630e99480b47f767.png"></p>
+<p>对于开启<strong>zram</strong>的手机，需要加载 <code>zsmalloc.ko</code> 和 <code>zram.ko</code> 文件才能正常解析<strong>dump</strong>文件，图中我们得到了<strong>system_server</strong>进程 <strong>PID 1583</strong> 的<strong>core</strong>文件。</p>
+<p>我们使用<strong>GDB</strong>工具解析该<strong>core</strong>文件。</p>
+<p>得到正确的 symbols 后，我们使用<code>gdb</code>加载<code>system_server的core</code>文件。</p>
+<blockquote>
+<p>这里需要注意，获取正确的 symbols 中，关于 Google mainline 中的模块，symbol 是需要和 Google 对接获取的，可以联系公司的 Google 接口人获取。</p>
+</blockquote>
+<p>使用 gdb 加载<code>core</code>文件后，自动会切换到主线程号<code>tid=1583</code>线程（GDB 指定 ID&#x3D;1）上。</p>
+<p>我们需要找到 <strong>GDB</strong> 给<code>watchdog</code>指定的 ID 并切换过去。虽然我们已经知道<code>watchdog</code>的线程 ID：<strong>1752</strong>。<br>但使用<code>thread 1752</code>是无法执行成功的，需要先执行下面命令：</p>
+<h4 id="2-3-1-info-threads-作用：得到-watchdog-在-GDB-环境中的-ID"><a href="#2-3-1-info-threads-作用：得到-watchdog-在-GDB-环境中的-ID" class="headerlink" title="2.3.1 info threads 作用：得到 watchdog 在 GDB 环境中的 ID"></a>2.3.1 info threads 作用：得到 watchdog 在 GDB 环境中的 ID</h4><p>使用 info threads 获取 system_server 的线程信息，主要先排查 watchdog 线程的堆栈信息。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-comment">//*号表示当前处于某个线程上</span><br>(gdb) info threads<br>  Id   Target Id         Frame<br>* <span class="hljs-number">1</span>    LWP <span class="hljs-number">1583</span>          syscall () at bionic/libc/arch-arm64/bionic/syscall.S:<span class="hljs-number">44</span><br>  <span class="hljs-number">2</span>    LWP <span class="hljs-number">1609</span>          syscall () at bionic/libc/arch-arm64/bionic/syscall.S:<span class="hljs-number">44</span><br>  ......<br>  <span class="hljs-number">23</span>   LWP <span class="hljs-number">1750</span>          __epoll_pwait ()<br>    at out/soong/.intermediates/bionic/libc/syscalls-arm64/gen/syscalls-arm64.S:<span class="hljs-number">2316</span><br>  <span class="hljs-number">24</span>   LWP <span class="hljs-number">1751</span>          __epoll_pwait ()<br>    at out/soong/.intermediates/bionic/libc/syscalls-arm64/gen/syscalls-arm64.S:<span class="hljs-number">2316</span><br>  <span class="hljs-number">25</span>   LWP <span class="hljs-number">1752</span>          syscall () at bionic/libc/arch-arm64/bionic/syscall.S:<span class="hljs-number">44</span><br>  <span class="hljs-number">26</span>   LWP <span class="hljs-number">1756</span>          __epoll_pwait ()<br>    at out/soong/.intermediates/bionic/libc/syscalls-arm64/gen/syscalls-arm64.S:<span class="hljs-number">2316</span><br></code></pre></td></tr></table></figure>
+
+<p>根据上述信息，<code>watchdog</code>线程在 GDB 中的 ID 为 <strong>25</strong>。</p>
+<h4 id="2-3-2-thread-25-作用：切换到-watchdog-线程"><a href="#2-3-2-thread-25-作用：切换到-watchdog-线程" class="headerlink" title="2.3.2 thread 25 作用：切换到 watchdog 线程"></a>2.3.2 thread 25 作用：切换到 watchdog 线程</h4><p>通过 thread 线程序号，跳转到该线程上下文。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs c">(gdb) thread <span class="hljs-number">25</span><br>[Switching to thread <span class="hljs-number">25</span> (LWP <span class="hljs-number">1752</span>)]<br>#<span class="hljs-number">0</span>  syscall () at bionic/libc/arch-arm64/bionic/syscall.S:<span class="hljs-number">44</span><br><span class="hljs-number">44</span>      in bionic/libc/arch-arm64/bionic/syscall.S<br></code></pre></td></tr></table></figure>
+
+<h4 id="2-3-3-bt-作用：打印-watchdog-线程此时的函数堆栈信息"><a href="#2-3-3-bt-作用：打印-watchdog-线程此时的函数堆栈信息" class="headerlink" title="2.3.3 bt 作用：打印 watchdog 线程此时的函数堆栈信息"></a>2.3.3 bt 作用：打印 watchdog 线程此时的函数堆栈信息</h4><p>通过 bt 命令，我们得到<code>watchdog</code>的线程信息。</p>
+<p><img src="/blog_imgs/18_async-signal-safe_futex_hang/Image_2.png" srcset="/img/loading.gif" lazyload alt="8a2154c647a32adf2b07cd2208c74eb0.png"></p>
+<p>通过上面堆栈信息我们可以发现在<strong>栈帧 5</strong>上开始持有对应的锁，并且能看到锁的地址：<code>mutex=0xb4000078dd8b0850</code>（图中红框的地址就是我们锁的地址）。<br>其次从 6&#x2F;7&#x2F;8 三个栈帧我们可以看到，<br>从<code>art/libartbase/base/logging.cc:100</code> art 模块的<code>logging.cc</code>代码的 100 行，<code>logging.cc</code>中<code>InitLogging</code>函数开始需要持锁。<br>我们可以先看看该处的代码实现：</p>
+<p><img src="/blog_imgs/18_async-signal-safe_futex_hang/Image_3.png" srcset="/img/loading.gif" lazyload alt="09295121055e066d5740409c6872d00f.png"></p>
+<p>从上面代码能看到 <strong>100 行</strong>开始进行持锁，并且有注释为什么要这么做。</p>
+<h4 id="2-3-4-f-5-查看-art-InitLogging-函数中具体信息"><a href="#2-3-4-f-5-查看-art-InitLogging-函数中具体信息" class="headerlink" title="2.3.4 f 5 查看 art::InitLogging 函数中具体信息"></a>2.3.4 f 5 查看 art::InitLogging 函数中具体信息</h4><p>使用<strong>f</strong>（frame）帧号跳转到对应的函数帧中查看具体信息。<br>使用<strong>p</strong>（print）命令打印变量&#x2F;表达式&#x2F;内存地址值等信息，<code>p *mutex</code>打印 mutex 变量的值（数据结构中具体的值）。<br>使用<strong>ptype</strong>结构体名可以打印出结构体的代码信息。</p>
+<p><img src="/blog_imgs/18_async-signal-safe_futex_hang/Image_4.png" srcset="/img/loading.gif" lazyload alt="fdf878907d38a1d7d85535b8e61b459e.png"></p>
+<p>能看到红框中我们想要知道的锁的<code>owner_tid</code>竟然等于 <strong>0</strong>，在<strong>GDB</strong>中一个进程的所有线程中没有被指定为<code>0</code>号的线程呀。<br>那么进一步可以输出该进程的所有线程堆栈进行一一排查。</p>
+<h4 id="2-3-5-thread-apply-all-bt-打印出所有线程的堆栈信息"><a href="#2-3-5-thread-apply-all-bt-打印出所有线程的堆栈信息" class="headerlink" title="2.3.5 thread apply all bt 打印出所有线程的堆栈信息"></a>2.3.5 thread apply all bt 打印出所有线程的堆栈信息</h4><p>通过 <code>thread apply all bt</code> 打印出<strong>system_server</strong>所有线程的用户态堆栈信息。<br>由于<strong>system_server</strong>的线程众多 300+，在 GDB 中没有类似<code>thread apply all bt &gt;XXX.txt</code>这种输出到文件的命令。</p>
+<p><strong>技巧</strong>：<br>可以在 <strong>gdb</strong> 开始调试前，执行下面命令将所有 <strong>gdb</strong> 输出的信息转存到文件中。</p>
+<p><img src="/blog_imgs/18_async-signal-safe_futex_hang/Image_5.png" srcset="/img/loading.gif" lazyload alt="98f81705954dec57fe8820b6cc4efd37.png"><br>执行<code>set logging enable off</code>所有内容都会被保存到<strong>XX_out.txt</strong>中。</p>
+<p>得到<code>system_server</code>中所有线程的堆栈信息，需要一一排查，300+ 线程，我们优先选择检索和该锁调用相关的线程，例如检索 <code>(mutex=0xb4000078dd8b0850)</code>。</p>
+<p><img src="/blog_imgs/18_async-signal-safe_futex_hang/Image_6.png" srcset="/img/loading.gif" lazyload alt="917ac36194437b2c5e10b1a37ee7f1f1.png"></p>
+<p>优先在这 48 个线程中一一排查，看是否有可疑的堆栈，这样排查是能排查到异常的，可能就是慢些。<br>此题我是通过检索持锁之前的函数：<code>InitLogging</code>来找到异常线程的，因为锁的获取就是在 <code>InitLogging</code>该函数中。<br>检索结果如下：<br><img src="/blog_imgs/18_async-signal-safe_futex_hang/Image_7.png" srcset="/img/loading.gif" lazyload alt="687eb906591a9916d6e217c052e35f8b.png"><br>红框中<code>InitLogging</code>和其他线程不一样，其他线程在栈帧 8 中使用 <code>InitLogging</code>函数，而这里唯独有一个栈帧 <strong>23</strong> 使用<code>InitLogging</code>函数。<br>进一步排查发现<code>Thread 261 (LWP 2195)</code>异常。</p>
+<p><img src="/blog_imgs/18_async-signal-safe_futex_hang/Image_8.png" srcset="/img/loading.gif" lazyload alt="cfdd911e6066678b962a2b80bd5be64c.png"></p>
+<p><strong>红框中</strong>中间<strong>栈帧 15</strong>有信号的介入，可能存在信号处理函数使用非 <code>async-signal-safe functions</code>导致的此问题（这里很快反应过来，是由于之前遇到过类似问题）。</p>
+<h3 id="2-4-找到异常模块代码并排查"><a href="#2-4-找到异常模块代码并排查" class="headerlink" title="2.4 找到异常模块代码并排查"></a>2.4 找到异常模块代码并排查</h3><p>通过 <strong>2195 线程</strong>我们知道了异常点，进一步我们可以查找该线程调用什么模块的代码导致异常。<br><strong>方法有很多种</strong>：</p>
+<ol>
+<li>看线程堆栈调用了哪些模块代码，并且堆栈栈帧中的参数信息是否携带一些模块信息。</li>
+<li>可以尝试直接在<code>ap log</code>检索该线程是否有一些 <strong>log</strong> 输出，来确定模块。</li>
+</ol>
+<p><strong>方法一</strong>：<br>我们能从栈帧中看到传入 log 对象的 message 信息。 </p>
+<p><img src="/blog_imgs/18_async-signal-safe_futex_hang/Image_9.png" srcset="/img/loading.gif" lazyload alt="a10086071009e118959c07f5eb35d5b1.png"></p>
+<p>我们排查时主要是栈帧 <strong>15</strong> 以前的栈帧的参数信息，因为我们就能知道信号处理函数中会调用什么信息，根据信息排查到异常点，从图中的<strong>红色小箭头</strong>以及红框我们能得到参数信息”<code>[MF] compress broken</code>“，就可以根据 <code>[MF] compress broken</code> 信息去检索代码，查看模块以及异常点。<br>也可以通过下面方法使用 <strong>x</strong> 或者 <strong>p</strong> 指令查看参数信息，推荐使用<code>p</code>指令，<strong>x</strong> 指令较为原始。</p>
+<p><img src="/blog_imgs/18_async-signal-safe_futex_hang/Image_10.png" srcset="/img/loading.gif" lazyload alt="60bd305b41db8037e7c2786733bd71fc.png"></p>
+<p><strong>方法二</strong>：<br>查找线程 2195 的打印也能从中看到模块 log，通过 log 排查也能排查到。</p>
+<p><img src="/blog_imgs/18_async-signal-safe_futex_hang/Image_11.png" srcset="/img/loading.gif" lazyload alt="3ca167a969e278408899ba802f92d848.png"></p>
+<p><img src="/blog_imgs/18_async-signal-safe_futex_hang/Image_12.png" srcset="/img/loading.gif" lazyload alt="3ad26fe8049569db0cdee10d5b540a97.png"></p>
+<p>从上面代码我们能看到信号处理函数中使用了<code>ALOGE</code>，此函数是非 <code>async-signal-safe</code>，会导致<strong>单线程死锁</strong>，要怎么解释单线程死锁呢？<br>这个需要从 Linux 信号处理机制讲起，此处需要较长时间解释，可自行研究。<br>详见：<a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man7/signal-safety.7.html">https://man7.org/linux/man-pages/man7/signal-safety.7.html</a></p>
+<h3 id="2-5-问题原因总结"><a href="#2-5-问题原因总结" class="headerlink" title="2.5 问题原因总结"></a>2.5 问题原因总结</h3><p>该线程在日志初始化过程中需要持有锁，在<code>LogdLoggerLocked::operator</code> 中 <strong>lock_guard</strong> 拿到 <code>mutex</code>，然后再后续的执行流程中，线程收到了客制化的<strong>信号12</strong>，跳转<strong>客制化信号处理函数</strong>执行，执行的过程中需要打印日志，进而有需要<code>LogdLoggerLocked::operator</code> 去获取<strong>mutex</strong>锁。由于之前已经获取到，信号处理函数中就无法获取到该锁，最终导致<strong>单线程死锁</strong>。</p>
+<h3 id="2-6-解决方法"><a href="#2-6-解决方法" class="headerlink" title="2.6 解决方法"></a>2.6 解决方法</h3><p><strong>解决办法</strong>：</p>
+<ol>
+<li>替换调用这个<code>ALOGE</code>方法即可，并且满足 <code>async-signal-safe functions</code>要求。<br>详见：<a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man7/signal-safety.7.html">https://man7.org/linux/man-pages/man7/signal-safety.7.html</a></li>
+<li>使用<code>ALOGE</code>时屏蔽信号（这个方法不适用于此题，使用<code>ALOGE</code>屏蔽信号，因为它的功能本身就是接收信号打印<code>log</code>）。</li>
+</ol>
+<h3 id="2-7-验证方法"><a href="#2-7-验证方法" class="headerlink" title="2.7 验证方法"></a>2.7 验证方法</h3><p>我们只需要频繁给对应模块线程不断发送自定义信号即可，我这边实验必现路径是可行的，问题是能必现的。</p>
+<p><img src="/blog_imgs/18_async-signal-safe_futex_hang/Image_13.png" srcset="/img/loading.gif" lazyload alt="36473244ed1685d94fa749d44dd5b3aa.png"></p>
+<h2 id="3-问题总结-技巧提炼"><a href="#3-问题总结-技巧提炼" class="headerlink" title="3. 问题总结 &amp; 技巧提炼"></a>3. 问题总结 &amp; 技巧提炼</h2><ul>
+<li>本文我们使用 <strong>gdb</strong> 工具来分析 <strong>system_server</strong> 的线程情况，从而排查到问题的原因。</li>
+<li>本文进一步的记录 gdb 工具的使用；</li>
+<li>本文也介绍了信号以及信号处理函数使用的注意事项。</li>
+</ul>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E9%97%AE%E9%A2%98%E8%AE%B0%E5%BD%95/" class="category-chain-item">问题记录</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/%E9%97%AE%E9%A2%98%E8%AE%B0%E5%BD%95/Hung/" class="category-chain-item">Hung</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93/" class="print-no-link">#问题总结</a>
+      
+        <a href="/tags/Hung/" class="print-no-link">#Hung</a>
+      
+    </div>
+  
+</div>
+
+
+              
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2025/09/02/2_watchdog_%E4%B8%8B/" title="Android system_server-watchdog机制介绍（下）">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Android system_server-watchdog机制介绍（下）</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2025/03/23/1_watchdog_%E4%B8%8A/" title="Android system_server-watchdog机制介绍（上）">
+                        <span class="hidden-mobile">Android system_server-watchdog机制介绍（上）</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
