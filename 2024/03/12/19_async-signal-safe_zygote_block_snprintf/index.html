@@ -1,0 +1,910 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/site_icon.png">
+  <link rel="icon" href="/main_wallpapers/site_icon_2.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#37AFE1">
+  <meta name="author" content="CubeHuang">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="1.场景 平台：MTK 平台，arm64 Android版本：Android U 日志：MTK KE DB 文件、bugreport等 场景：  开关机测试场景：开机后十秒后，自动化测试 apk 触发指令进行重启。测试步骤：使用公司的自动化测试 app 运行在手机中，测试 app 间隔 15s 执行重启指令重启手机，测试次数 3000 次，时长 3 天。 现象：开关机测试停止，随后手机点击各个应用">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Hang-zygote 线程死锁卡死白屏问题总结">
+<meta property="og:url" content="https://cubehuang.github.io/2024/03/12/19_async-signal-safe_zygote_block_snprintf/">
+<meta property="og:site_name" content="Cubehuang_blog">
+<meta property="og:description" content="1.场景 平台：MTK 平台，arm64 Android版本：Android U 日志：MTK KE DB 文件、bugreport等 场景：  开关机测试场景：开机后十秒后，自动化测试 apk 触发指令进行重启。测试步骤：使用公司的自动化测试 app 运行在手机中，测试 app 间隔 15s 执行重启指令重启手机，测试次数 3000 次，时长 3 天。 现象：开关机测试停止，随后手机点击各个应用">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/19_async-signal-safe_zygote_block_snprintf/screenshot-1.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/19_async-signal-safe_zygote_block_snprintf/system_server_start.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/19_async-signal-safe_zygote_block_snprintf/Image.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/19_async-signal-safe_zygote_block_snprintf/Image_1.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/19_async-signal-safe_zygote_block_snprintf/Image_2.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/19_async-signal-safe_zygote_block_snprintf/Image_3.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/19_async-signal-safe_zygote_block_snprintf/Image_4.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/19_async-signal-safe_zygote_block_snprintf/Image_5.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/19_async-signal-safe_zygote_block_snprintf/Image_6.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/19_async-signal-safe_zygote_block_snprintf/Image_7.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/19_async-signal-safe_zygote_block_snprintf/Image_9.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/19_async-signal-safe_zygote_block_snprintf/Image_10.png">
+<meta property="og:image" content="https://cubehuang.github.io/blog_imgs/19_async-signal-safe_zygote_block_snprintf/Image_11.png">
+<meta property="article:published_time" content="2024-03-11T21:09:13.000Z">
+<meta property="article:modified_time" content="2024-04-14T21:45:45.000Z">
+<meta property="article:author" content="CubeHuang">
+<meta property="article:tag" content="Hung">
+<meta property="article:tag" content="问题总结">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://cubehuang.github.io/blog_imgs/19_async-signal-safe_zygote_block_snprintf/screenshot-1.png">
+  
+  
+  
+  <title>Hang-zygote 线程死锁卡死白屏问题总结 - Cubehuang_blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"cubehuang.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":["home","post","category","about","links","archive"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":true,"placement":"left","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>CubeHuang</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/main_wallpapers/wp_1.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Hang-zygote 线程死锁卡死白屏问题总结"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2024-03-12 05:09" pubdate>
+          2024年3月12日 凌晨
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          11k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          88 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="padding-left: 2rem; margin-right: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Hang-zygote 线程死锁卡死白屏问题总结</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h3 id="1-场景"><a href="#1-场景" class="headerlink" title="1.场景"></a>1.场景</h3><ul>
+<li><strong>平台</strong>：MTK 平台，arm64</li>
+<li><strong>Android版本</strong>：Android U</li>
+<li><strong>日志</strong>：MTK KE DB 文件、bugreport等</li>
+<li><strong>场景</strong>：</li>
+</ul>
+<p><strong>开关机测试场景</strong>：开机后十秒后，自动化测试 <code>apk</code> 触发指令进行重启。<br><strong>测试步骤</strong>：使用公司的自动化测试 <code>app</code> 运行在手机中，测试 <code>app</code> 间隔 <code>15s</code> 执行重启指令重启手机，测试次数 <code>3000</code> 次，时长 3 天。</p>
+<p><strong>现象</strong>：开关机测试停止，随后手机点击各个应用打不开、白屏、进程无法启动成功，并且机器出现异常，机器保持现场。</p>
+<h3 id="2-问题分析"><a href="#2-问题分析" class="headerlink" title="2.问题分析"></a>2.问题分析</h3><p><strong>现象分析</strong>：该问题从现象上来看会出现手机界面卡住，当尝试打开任意应用时，应用无法打开并且界面白屏，人为进行手动重启后手机能恢复正常。<br>由于问题发生时，该问题的现场是可以保留的。我们先抓了一份关于打开电话应用的 <strong>systrace</strong> 日志尝试分析，trace 信息如下：<br><img src="/blog_imgs/19_async-signal-safe_zygote_block_snprintf/screenshot-1.png" srcset="/img/loading.gif" lazyload alt="65b2f6d8adb17f68ccb49b407edc60d3.png"><br>从<strong>trace</strong>信息中我们看到应用进程启动过程中<code>bindApplication</code>阶段阻塞，进而导致应用无法正常完成启动。由于所有应用无法启动，怀疑可能是<code>system_server进程</code>创建应用进程出现异常，故抓取<code>bugreport信息</code>。查看<code>system_server</code>中关于创建应用进程的<code>ActivityManager:procStart</code>线程是否有异常。</p>
+<h4 id="2-1-dump可疑进程堆栈"><a href="#2-1-dump可疑进程堆栈" class="headerlink" title="2.1 dump可疑进程堆栈"></a>2.1 dump可疑进程堆栈</h4><p>指令：<code>adb bugreport</code><br><img src="/blog_imgs/19_async-signal-safe_zygote_block_snprintf/system_server_start.png" srcset="/img/loading.gif" lazyload alt="b31c5db645e4a0cb82933b91cd386993.png"><br>从堆栈中能看出<code>system_server</code>中的<code>ActivityManager:procStart</code>线程一直在等待<code>zygote</code>进程的返回，该线程在正常情况下线程状态应该在<code>Looper</code>中等待消息，图中为异常情况。</p>
+<p>进一步我们怀疑可能是 <code>zygote</code> 进程异常，需要抓取 <code>zygote</code> 进程的信息。（由于我们启动的应用是 <code>64</code> 位的，故只需要抓取 <code>zygote64</code> 进程的堆栈信息即可）</p>
+<ul>
+<li>通过<strong>debuggerd</strong>工具<code>dump</code>出<code>zygote64</code> 进程中各个线程的调用栈来查看异常。</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs cpp">adb shell <span class="hljs-string">&quot;debuggerd `pidof zygote64`&quot;</span> &gt;zygote64_stacks_<span class="hljs-number">0.</span>txt<br>adb shell <span class="hljs-string">&quot;debuggerd `pidof zygote`&quot;</span> &gt;zygote_stacks_<span class="hljs-number">0.</span>txt<br></code></pre></td></tr></table></figure>
+
+<p>经过<code>dump</code>能看到<code>zygote</code>进程的主线程以及其他几个线程有些异常。<br>（log1：<code>zygote64</code>主线程）<br><img src="/blog_imgs/19_async-signal-safe_zygote_block_snprintf/Image.png" srcset="/img/loading.gif" lazyload alt="c686a4f15f96b4875c1d885e15b3ed72.png"><br>（log1：<code>zygote64</code>子线程1）<br><img src="/blog_imgs/19_async-signal-safe_zygote_block_snprintf/Image_1.png" srcset="/img/loading.gif" lazyload alt="8b620f7f894581bffcadbbfd4ac99b55.png"><br>（log1：<code>zygote64</code>子线程2）<br><img src="/blog_imgs/19_async-signal-safe_zygote_block_snprintf/Image_2.png" srcset="/img/loading.gif" lazyload alt="50145b781bfb101c9ae6f6ba3b5c41d2.png"></p>
+<p>（log2：<code>zygote64</code> 主线程）<br><img src="/blog_imgs/19_async-signal-safe_zygote_block_snprintf/Image_3.png" srcset="/img/loading.gif" lazyload alt="bae9a0d5d0aee246487084e6f9b362f3.png"><br>（log2：<code>zygote64</code>子线程1）<br><img src="/blog_imgs/19_async-signal-safe_zygote_block_snprintf/Image_4.png" srcset="/img/loading.gif" lazyload alt="d367e2a86becc33b92f227357c0706c3.png"><br>（log2：<code>zygote64</code>子线程2）<br><img src="/blog_imgs/19_async-signal-safe_zygote_block_snprintf/Image_5.png" srcset="/img/loading.gif" lazyload alt="1be1e0be0372eb75a7131b742fb02b48.png"></p>
+<p>两份 <code>log</code> 中，<code>zygote</code> 主线程均在等锁，<br>主线程最终均在阻塞在 <code>art::Mutex::ExclusiveLock()</code>，等待 <strong>runtime_shutdown_lock_</strong>，<br>子线程堆栈类似。</p>
+<p>怀疑是线程异常持锁导致，线程卡死。</p>
+<h4 id="2-2-抓取fulldump排查"><a href="#2-2-抓取fulldump排查" class="headerlink" title="2.2 抓取fulldump排查"></a>2.2 抓取fulldump排查</h4><p>从保存现场的一台 <code>userdebug</code> 的异常机器，触发 <code>fulldump</code>，从而分析 <code>zygote</code> 线程异常点。<br><strong>抓取方法</strong>：</p>
+<figure class="highlight autohotkey"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs autohotkey"><span class="hljs-number">1</span>. 关`zram`<br>adb shell cat /proc/swaps <br>adb shell <span class="hljs-string">&quot;swapoff /dev/block/zram0&quot;</span><br>adb shell cat /proc/swaps<br>看 swaptotal 的值是否为 <span class="hljs-number">0</span>。<br><br><span class="hljs-number">2</span>. 触发KE，抓`fulldump`。<br>注意是`fulldump`，如果不知道怎么打开，<br><span class="hljs-number">2.1</span> 确保 当前版本 支持 `fulldump`<br>adb root &amp;&amp; adb shell<br>mrdump_tool is-supported # 如果有开启会输出MT-RAMDUMP support ok<br><span class="hljs-number">2.2</span> `adb shell cat /proc/aed/generate-oops` 触发 KE<br><br><span class="hljs-number">3</span>.提供`fulldump DB` + `vmlinux` + 必要`symbols`<br>版本对应的`symbols`先备份好，后续可能还会需要其他`symbols`<br><br><span class="hljs-number">4</span>. `fulldump` 保存在 `data/vendor/aee_exp`<br></code></pre></td></tr></table></figure>
+
+<h4 id="2-3-调用栈代码排查"><a href="#2-3-调用栈代码排查" class="headerlink" title="2.3 调用栈代码排查"></a>2.3 调用栈代码排查</h4><p><img src="/blog_imgs/19_async-signal-safe_zygote_block_snprintf/Image_6.png" srcset="/img/loading.gif" lazyload alt="8b620f7f894581bffcadbbfd4ac99b55.png"></p>
+<p>经过代码排查，标注的代码流程上有平台添加的功能修改。<br><img src="/blog_imgs/19_async-signal-safe_zygote_block_snprintf/Image_7.png" srcset="/img/loading.gif" lazyload alt="6f622f5622c2130e1501f8f4ad28ce5f.png"></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-comment">//netd/client/NetdClient.cpp </span><br><span class="hljs-function"><span class="hljs-type">int</span> <span class="hljs-title">netdClientConnect</span><span class="hljs-params">(<span class="hljs-type">int</span> sockfd, <span class="hljs-type">const</span> sockaddr* addr, <span class="hljs-type">socklen_t</span> addrlen)</span> </span>&#123;<br>    <span class="hljs-comment">//MTK 客制化代码</span><br>    ...<br>    <span class="hljs-built_in">snprintf</span>(path, <span class="hljs-built_in">sizeof</span>(path), <span class="hljs-string">&quot;/proc/self/status&quot;</span>);<br>    ...<br>    <span class="hljs-comment">//MTK 客制化代码</span><br><br>    <span class="hljs-type">const</span> <span class="hljs-type">bool</span> shouldSetFwmark = <span class="hljs-built_in">shouldMarkSocket</span>(sockfd, addr);<br>    ...<br>&#125;<br></code></pre></td></tr></table></figure>
+<p><strong>功能点</strong>：假如第三方跑分软件想要<strong>联网</strong>，那么就读取线程自身状态，确认是第三方跑分 apk 就直接 <code>return</code>，不让其联网。</p>
+<p><strong>平台添加代码解读</strong>：<br>在产品研发阶段，防止手机被安装上性能跑分软件后联网，将手机信息上传到网络上造成信息泄密。</p>
+<p>由于添加的代码是在公共库中<code>system/lib64/libnetd_client.so</code>，即每个需要使用网络相关功能包括<code>zygote</code>在内的进程都会调用到添加的接口代码中。<br>每个进程都会执行一遍 <code>snprintf(path, sizeof(path), &quot;/proc/self/status&quot;)</code>，对于 <code>zygote</code> 进程频繁创建进程的场景可能存在异常。</p>
+<h4 id="2-4-通过coredump排查"><a href="#2-4-通过coredump排查" class="headerlink" title="2.4 通过coredump排查"></a>2.4 通过<code>coredump</code>排查</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs c"> (<span class="hljs-keyword">struct</span> siginfo)<span class="hljs-number">0x0000007A2069D740</span> = (    <br>si_signo = <span class="hljs-number">0x11</span>,<br><span class="hljs-comment">// 这里 MTK 分析错误，将 16 进制 11 看成 10 进制 11，以为发生了 signal 11，将问题点指向我们 zygote 定制有异常，可能出现 NE，我仔细看了一下发现不对</span><br>    si_errno = <span class="hljs-number">0x0</span>,<br>    si_code = <span class="hljs-number">0x2</span>,<br></code></pre></td></tr></table></figure>
+
+<p>16 进制的 <code>si_signo = 0x11</code> 对应十进制信号 <code>signal 17</code>，即 <code>SIGCHLD</code>，子进程退出信号。<br>我们通过 <strong>gdb</strong> 分析 <strong>zygote</strong> 进程的 core 文件，可以从异常线程的堆栈中得到信息，确实在处理子进程的<strong>退出信息打印相关</strong>。<br><img src="/blog_imgs/19_async-signal-safe_zygote_block_snprintf/Image_9.png" srcset="/img/loading.gif" lazyload alt="a1e86fab9b7b4bb710d461b46f05b1b5.png"><br>我们可以看到 <code>zygote64</code> 的两个子线程收到了子进程的退出信号，正在处理退出逻辑。<br><img src="/blog_imgs/19_async-signal-safe_zygote_block_snprintf/Image_10.png" srcset="/img/loading.gif" lazyload alt="564ac0508a8a6e642e3e9282c4614ded.png"></p>
+<p>我们查看上图调用栈的流程 <code>attach</code> 方法（代码需要在 Google 在线网站上看：<a target="_blank" rel="noopener" href="https://cs.android.com/android/%EF%BC%89%E3%80%82">https://cs.android.com/android/）。</a></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-comment">//art/runtime/thread.cc</span><br>Thread* <span class="hljs-title function_">Thread::Attach</span><span class="hljs-params">(<span class="hljs-type">const</span> <span class="hljs-type">char</span>* thread_name,</span><br><span class="hljs-params">                       <span class="hljs-type">bool</span> as_daemon,</span><br><span class="hljs-params">                       PeerAction peer_action,</span><br><span class="hljs-params">                       <span class="hljs-type">bool</span> should_run_callbacks)</span> &#123;<br>  Runtime* runtime = Runtime::Current();<br>  ScopedTrace <span class="hljs-title function_">trace</span><span class="hljs-params">(<span class="hljs-string">&quot;Thread::Attach&quot;</span>)</span>;<br>  <span class="hljs-keyword">if</span> (runtime == nullptr) &#123;<br>    LOG(ERROR) &lt;&lt; <span class="hljs-string">&quot;Thread attaching to non-existent runtime: &quot;</span> &lt;&lt;<br>        ((thread_name != nullptr) ? thread_name : <span class="hljs-string">&quot;(Unnamed)&quot;</span>);<br>    <span class="hljs-keyword">return</span> nullptr;<br>  &#125;<br>  Thread* self;<br>  &#123;<br>    ScopedTrace <span class="hljs-title function_">trace2</span><span class="hljs-params">(<span class="hljs-string">&quot;Thread birth&quot;</span>)</span>;<br>    MutexLock <span class="hljs-title function_">mu</span><span class="hljs-params">(nullptr, *Locks::runtime_shutdown_lock_)</span>;<span class="hljs-comment">//&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;已经持锁</span><br>    <span class="hljs-keyword">if</span> (runtime-&gt;IsShuttingDownLocked()) &#123;<br>      LOG(WARNING) &lt;&lt; <span class="hljs-string">&quot;Thread attaching while runtime is shutting down: &quot;</span> &lt;&lt;<br>          ((thread_name != nullptr) ? thread_name : <span class="hljs-string">&quot;(Unnamed)&quot;</span>);<br>      <span class="hljs-keyword">return</span> nullptr;<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>      Runtime::Current()-&gt;StartThreadBirth();<br>      self = new Thread(as_daemon);<span class="hljs-comment">//持锁后new一个Thread走后面的堆栈流程</span><br>      <span class="hljs-type">bool</span> init_success = self-&gt;Init(runtime-&gt;GetThreadList(), runtime-&gt;GetJavaVM());<br>      Runtime::Current()-&gt;EndThreadBirth();<br>      <span class="hljs-keyword">if</span> (!init_success) &#123;<br>        delete self;<br>        <span class="hljs-keyword">return</span> nullptr;<br>      &#125;<br>    &#125;<br>  &#125;<br></code></pre></td></tr></table></figure>
+<p>我们可以看到<code>attach</code>函数中持锁<strong>runtime_shutdown_lock_</strong>，然后new了一个新线程。<br><code>zygote</code> 主线程在 <strong>fork</strong> 应用进程流程中，<code>CreateNativeThread</code> 正在等 <strong>runtime_shutdown_lock_</strong> 这把锁。<br><img src="/blog_imgs/19_async-signal-safe_zygote_block_snprintf/Image_11.png" srcset="/img/loading.gif" lazyload alt="2bd3602dea769ea3501588f0e576f6cf.png"><br>主线程的堆栈中的部分代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><code class="hljs c">art/runtime/thread.cc<br><span class="hljs-type">void</span> <span class="hljs-title function_">Thread::CreateNativeThread</span><span class="hljs-params">(JNIEnv* env, jobject java_peer, <span class="hljs-type">size_t</span> stack_size, <span class="hljs-type">bool</span> is_daemon)</span> &#123;<br>  CHECK(java_peer != nullptr);<br>  Thread* self = static_cast&lt;JNIEnvExt*&gt;(env)-&gt;GetSelf();<br>...<br><br>  Runtime* runtime = Runtime::Current();<br><br>  <span class="hljs-comment">// Atomically start the birth of the thread ensuring the runtime isn&#x27;t shutting down.</span><br>  <span class="hljs-type">bool</span> thread_start_during_shutdown = <span class="hljs-literal">false</span>;<br>  &#123;<br>    MutexLock <span class="hljs-title function_">mu</span><span class="hljs-params">(self, *Locks::runtime_shutdown_lock_)</span>;<span class="hljs-comment">//&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;</span><br>    <span class="hljs-keyword">if</span> (runtime-&gt;IsShuttingDownLocked()) &#123;<br>      thread_start_during_shutdown = <span class="hljs-literal">true</span>;<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>      runtime-&gt;StartThreadBirth();<br>    &#125;<br>  &#125;<br>  <span class="hljs-keyword">if</span> (thread_start_during_shutdown) &#123;<br>    ScopedLocalRef&lt;jclass&gt; <span class="hljs-title function_">error_class</span><span class="hljs-params">(env, env-&gt;FindClass(<span class="hljs-string">&quot;java/lang/InternalError&quot;</span>))</span>;<br>    env-&gt;ThrowNew(error_class.get(), <span class="hljs-string">&quot;Thread starting during runtime shutdown&quot;</span>);<br>    <span class="hljs-keyword">return</span>;<br>  &#125;<br><br>  Thread* child_thread = new Thread(is_daemon);<br>  <span class="hljs-comment">// Use global JNI ref to hold peer live while child thread starts.</span><br>  child_thread-&gt;tlsPtr_.jpeer = env-&gt;NewGlobalRef(java_peer);<br>  stack_size = FixStackSize(stack_size);<br><br>  .....<br>&#125;<br></code></pre></td></tr></table></figure>
+<p>我们可以通过 <code>GDB</code> 查看锁的 <code>owner</code>，查看 <code>exclusive_owner_</code> 持锁线程为 <strong>7791</strong>（<code>{__a_ = 7791}</code>）。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs cpp">(gdb) f <span class="hljs-number">2</span><br>#<span class="hljs-number">2</span>  art::Mutex::<span class="hljs-built_in">ExclusiveLock</span> (<span class="hljs-keyword">this</span>=<span class="hljs-number">0xb400007ab4daa910</span>, self=<span class="hljs-number">0xb400007c44da92c0</span>) at art/runtime/base/mutex.cc:<span class="hljs-number">471</span><br>warning: <span class="hljs-number">471</span>        art/runtime/base/mutex.cc: 没有那个文件或目录<br>(gdb) p <span class="hljs-keyword">this</span><br>$<span class="hljs-number">10</span> = (art::Mutex *) <span class="hljs-number">0xb400007ab4daa910</span><br>(gdb) p *(art::Mutex *) <span class="hljs-number">0xb400007ab4daa910</span><br>$<span class="hljs-number">11</span> = &#123;&lt;art::BaseMutex&gt; = &#123;_vptr$BaseMutex = <span class="hljs-number">0x7a51ecd230</span> &lt;vtable <span class="hljs-keyword">for</span> art::Mutex<span class="hljs-number">+16</span>&gt;, name_ = <span class="hljs-number">0x7a515602a6</span> <span class="hljs-string">&quot;runtime shutdown lock&quot;</span>, contention_log_data_ = <span class="hljs-number">0xb400007ab4daa920</span>, <br>    level_ = art::kRuntimeShutdownLock, should_respond_to_empty_checkpoint_request_ = <span class="hljs-literal">false</span>&#125;, <br>  state_and_contenders_ = &#123;&lt;std::__1::atomic&lt;<span class="hljs-type">int</span>&gt;&gt; = &#123;&lt;std::__1::__atomic_base&lt;<span class="hljs-type">int</span>, <span class="hljs-literal">true</span>&gt;&gt; = &#123;&lt;std::__1::__atomic_base&lt;<span class="hljs-type">int</span>, <span class="hljs-literal">false</span>&gt;&gt; = &#123;__a_ = <span class="hljs-number">5</span>, <br>          <span class="hljs-type">static</span> is_always_lock_free = &lt;optimized out&gt;&#125;, &lt;No data fields&gt;&#125;, &lt;No data fields&gt;&#125;, &lt;No data fields&gt;&#125;, <span class="hljs-type">static</span> kHeldMask = <span class="hljs-number">1</span>, <span class="hljs-type">static</span> kContenderShift = <span class="hljs-number">1</span>, <span class="hljs-type">static</span> kContenderIncrement = <span class="hljs-number">2</span>, <br>  exclusive_owner_ = &#123;&lt;std::__1::atomic&lt;<span class="hljs-type">int</span>&gt;&gt; = &#123;&lt;std::__1::__atomic_base&lt;<span class="hljs-type">int</span>, <span class="hljs-literal">true</span>&gt;&gt; = &#123;&lt;std::__1::__atomic_base&lt;<span class="hljs-type">int</span>, <span class="hljs-literal">false</span>&gt;&gt; = &#123;__a_ = <span class="hljs-number">7791</span>, <br>          <span class="hljs-type">static</span> is_always_lock_free = &lt;optimized out&gt;&#125;, &lt;No data fields&gt;&#125;, &lt;No data fields&gt;&#125;, &lt;No data fields&gt;&#125;, recursion_count_ = <span class="hljs-number">1</span>, recursive_ = <span class="hljs-literal">false</span>, enable_monitor_timeout_ = <span class="hljs-literal">false</span>, <br>  monitor_id_ = <span class="hljs-number">29281</span>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><code>gdb</code>通过<code>f 2</code>移动堆栈到锁的那行堆栈<br>通过<code>p this</code>，把<code>this</code>的定义相关的拿出来</p>
+<figure class="highlight asciidoc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs asciidoc">p *(art::Mutex *) 0xb400007ab4daa910<br>就可以把锁的信息打出来<br>exclusive_owner_里的<span class="hljs-emphasis">__a_</span> =7791就是持锁线程<br></code></pre></td></tr></table></figure>
+
+<h4 id="2-5-问题的原因"><a href="#2-5-问题的原因" class="headerlink" title="2.5 问题的原因"></a>2.5 问题的原因</h4><p><code>zygote</code> 主线程创建应用进程流程中等待子线程释放 <strong>runtime_shutdown_lock_</strong>；子线程持有 <strong>runtime_shutdown_lock_</strong> 锁，在创建线程分配内存流程中持有 <strong>TSD</strong> 锁。这时候突然收到子进程退出的消息，立刻处理子进程退出流程，流程中由于客制化代码 <code>snprintf</code>（字符串存在数组中）也需要内存分配，需要再次持有 <strong>TSD</strong> 锁。</p>
+<p><strong>简化一下流程</strong>：<br>子线程调用 <code>Allocator()</code> 后持有 <strong>锁 A</strong>，突然收到子进程退出信号，在 <code>SigChldHandler()</code> 中处理信号退出逻辑，然后再次调用到 <code>Allocator()</code> 需要持有 <strong>锁 A</strong>，结果：此线程阻塞了。</p>
+<p><strong>疑点</strong>：<strong>我开始有些纳闷，为什么线程持锁后，再去获取同一把锁就获取不到呢</strong>？</p>
+<blockquote>
+<p>问了一下操作系统相关方面的前辈，表示确实是这样。</p>
+</blockquote>
+<p>并让我了解一下：<strong>async-signal-safe</strong> 概念。<br><strong>构想一个线程安全但不可重入的函数</strong>：（参考：<a target="_blank" rel="noopener" href="https://blog.csdn.net/ldong2007/article/details/4271685%EF%BC%8C%E8%8B%B1%E6%96%87%E9%83%A8%E5%88%86%E6%9B%B4%E4%B8%BA%E6%9C%89%E6%84%8F%E6%80%9D%EF%BC%89">https://blog.csdn.net/ldong2007/article/details/4271685，英文部分更为有意思）</a></p>
+<blockquote>
+<p>假设函数 func() 在执行过程中需要访问某个共享资源，因此为了实现线程安全，在使用该资源前加锁，在使用完资源后解锁。<br>假设该函数在某次执行过程中，在已经获得资源锁之后，有异步信号发生，程序的执行流转交给对应的信号处理函数；再假设在该信号处理函数中也需要调用函数 func()，那么 func() 在这次执行中仍会在访问共享资源前试图获得资源锁，然而我们知道前一个 func() 实例已然获得该锁，因此信号处理函数阻塞——另一方面，信号处理函数结束前被信号中断的线程是无法恢复执行的，当然也没有释放资源的机会，这样就出现了线程和信号处理函数之间的死锁局面。（我们的问题类型就是此种。）</p>
+</blockquote>
+<p>关于 <strong>signal-safety - async-signal-safe functions</strong> 可以了解下面这篇：</p>
+<blockquote>
+<p><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man7/signal-safety.7.html">https://man7.org/linux/man-pages/man7/signal-safety.7.html</a></p>
+</blockquote>
+<p>内容介绍如下：</p>
+<blockquote>
+<p>An async-signal-safe function is one that can be safely called<br>from within a signal handler.  Many functions are not async-<br>signal-safe.  In particular, nonreentrant functions are generally<br>unsafe to call from a signal handler.</p>
+</blockquote>
+<blockquote>
+<p>The kinds of issues that render a function unsafe can be quickly<br>understood when one considers the implementation of the stdio<br>library, all of whose functions are not async-signal-safe.</p>
+</blockquote>
+<blockquote>
+<p>When performing buffered I&#x2F;O on a file, the stdio functions must<br>maintain a statically allocated data buffer along with associated<br>counters and indexes (or pointers) that record the amount of data<br>and the current position in the buffer.  Suppose that the main<br>program is in the middle of a call to a stdio function such as<br>printf(3) where the buffer and associated variables have been<br>partially updated.  If, at that moment, the program is<br>interrupted by a signal handler that also calls printf(3), then<br>the second call to printf(3) will operate on inconsistent data,<br>with unpredictable results.</p>
+</blockquote>
+<blockquote>
+<p>To avoid problems with unsafe functions, there are two possible<br>choices:</p>
+</blockquote>
+<blockquote>
+<p>(a)  Ensure that (1) the signal handler calls only async-signal-<br>    safe functions, and (2) the signal handler itself is<br>    reentrant with respect to global variables in the main<br>    program.</p>
+</blockquote>
+<blockquote>
+<p>(b)  Block signal delivery in the main program when calling<br>    functions that are unsafe or operating on global data that<br>    is also accessed by the signal handler.</p>
+</blockquote>
+<p>在信号处理函数中（<code>signal handler</code>）不能使用非 <code>async-signal-safe</code> 类型的函数，绝大部分函数都不是 <code>async-signal-safe</code> 类型。<br>例如：我们此题中的 <code>SigChldHandler</code> 子进程退出信号处理函数流程中使用到了 <code>snprintf()</code>，这个方法就不是 <code>async-signal-safe</code> 类型，所以使用后出现了线程内部死锁。</p>
+<p><strong>可重入函数</strong>：当一个执行流因为异常或者被内核切换而中断正在执行的函数而转为另外一个执行流时，当后者的执行流对同一个函数的操作并不影响前一个执行流恢复后执行函数产生的结果；</p>
+<p>给出两种解决方法：</p>
+<ul>
+<li><strong>方法一</strong>：<ul>
+<li>确保 1. 信号处理函数调用的方法都是 <code>async-signal-safe</code> 类型函数；</li>
+<li>确保 2. 信号处理函数本身是可重入函数，即信号处理函数对于主线程之前的全局变量不能产生影响；</li>
+<li>（对于本题，信号处理函数已经调用了非 <code>async-signal-safe</code> 类型的函数 <code>snprintf</code>，它本身就已经不是可重入函数了。）</li>
+</ul>
+</li>
+<li><strong>方法二</strong>：<ul>
+<li>主线程调用这些操作全局变量的函数（并且这些函数在信号处理函数中也会被调用）时，将信号屏蔽；</li>
+<li>（对于本题，应该是不能屏蔽信号的，因为 APP 子进程在不断退出，退出信号无法传到 zygote 的子线程，如果屏蔽掉，那么 APP 子进程会成为僵尸进程。）</li>
+</ul>
+</li>
+</ul>
+<h3 id="3-解决方法"><a href="#3-解决方法" class="headerlink" title="3. 解决方法"></a>3. 解决方法</h3><p>正确解决方法：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-comment">//netd/client/NetdClient.cpp </span><br><span class="hljs-function"><span class="hljs-type">int</span> <span class="hljs-title">netdClientConnect</span><span class="hljs-params">(<span class="hljs-type">int</span> sockfd, <span class="hljs-type">const</span> sockaddr* addr, <span class="hljs-type">socklen_t</span> addrlen)</span> </span>&#123;<br>    <span class="hljs-comment">//MTK 客制化代码</span><br>    ...<br>    <span class="hljs-built_in">snprintf</span>(path, <span class="hljs-built_in">sizeof</span>(path), <span class="hljs-string">&quot;/proc/self/status&quot;</span>);<span class="hljs-comment">//去掉该处逻辑即可</span><br>    ...<br>    <span class="hljs-comment">//MTK 客制化代码</span><br><br>    <span class="hljs-type">const</span> <span class="hljs-type">bool</span> shouldSetFwmark = <span class="hljs-built_in">shouldMarkSocket</span>(sockfd, addr);<br>    ...<br>&#125;<br><br></code></pre></td></tr></table></figure>
+
+<p>对于其他进程来说，使用这个 <code>libnetd_client.so</code> 库中的 <code>netdClientConnect</code> 函数就会走到这个功能中去进行一次检查。</p>
+<p>我司临时解决方法：由于出货后的版本会把该功能关掉，故该问题能得到解决。</p>
+<h4 id="3-1-临时规避方案"><a href="#3-1-临时规避方案" class="headerlink" title="3.1 临时规避方案"></a>3.1 临时规避方案</h4><p>将增加 <code>watchdog</code> 看护 “<strong>mProcStartHandler</strong>“，当出现 <code>zygote</code> 卡住后，触发上层重启可以恢复。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-title function_">ActivityManagerService</span><span class="hljs-params">(Context systemContext, ActivityTaskManagerService atm)</span> &#123;<br>    Watchdog.getInstance().addThread(mProcStartHandler);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>将 zygote 各个线程调用栈打印出来：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs cpp">/system/frameworks/base/services/core/java/com/android/server/Watchdog.java<br><span class="hljs-number">117</span>      <span class="hljs-keyword">public</span> <span class="hljs-type">static</span> <span class="hljs-keyword">final</span> String[] NATIVE_STACKS_OF_INTEREST = <span class="hljs-keyword">new</span> String[] &#123;<br><span class="hljs-number">118</span>          <span class="hljs-string">&quot;/system/bin/audioserver&quot;</span>,<br><span class="hljs-number">119</span>          <span class="hljs-string">&quot;/system/bin/cameraserver&quot;</span>,<br>             ...<br><span class="hljs-number">133</span>          <span class="hljs-string">&quot;com.android.bluetooth&quot;</span>,  <span class="hljs-comment">// Bluetooth service</span><br>+++         <span class="hljs-string">&quot;zygote64&quot;</span>,<br>+++         <span class="hljs-string">&quot;zygote&quot;</span>,<br>+++         <span class="hljs-string">&quot;usap64&quot;</span>,<br>+++         <span class="hljs-string">&quot;usap32&quot;</span>,<br><span class="hljs-number">135</span>      &#125;;<br></code></pre></td></tr></table></figure>
+
+
+<h3 id="4-问题总结"><a href="#4-问题总结" class="headerlink" title="4. 问题总结"></a>4. 问题总结</h3><p>技巧提炼：</p>
+<ol>
+<li>黑屏、卡死、白屏等问题，必须尽量保存现场；</li>
+<li>根据现象猜测可能哪个模块异常，重点关注系统重要进程例如：SurfaceFlinger、system_server、zygote等；</li>
+<li>能否抓systrace，能抓则在复现场景抓取systrace，以及常规的系统日志（kernel、main、system、events）、bugreport等；</li>
+<li>可以优先使用TOP、PS等命令查看这些进程状态是否存在异常；</li>
+<li>可以向应用进程（包括 system_server）发送 signal 3 导出堆栈信息；对于 native 进程可以发送 signal 35 获取 tombstone 信息，当然也可以使用 debuggerd 命令（和上文中那样，原理也是信号 35 触发）；</li>
+<li>如果确定异常进程，那么可以产生 core 文件，通过 gdb 排查进程的线程情况；</li>
+<li>如果涉及多个模块进程，可能需要产生 KE 或者主动触发 ramdump，通过 crash 等工具进行分析。</li>
+</ol>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E9%97%AE%E9%A2%98%E8%AE%B0%E5%BD%95/" class="category-chain-item">问题记录</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/%E9%97%AE%E9%A2%98%E8%AE%B0%E5%BD%95/Hung/" class="category-chain-item">Hung</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93/" class="print-no-link">#问题总结</a>
+      
+        <a href="/tags/Hung/" class="print-no-link">#Hung</a>
+      
+    </div>
+  
+</div>
+
+
+              
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2024/03/18/4_Hung-%E5%90%84%E5%B9%B3%E5%8F%B0Hung%E6%9C%BA%E5%88%B6%E4%BB%8B%E7%BB%8D/" title="Hung-各平台Hung机制介绍">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Hung-各平台Hung机制介绍</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2022/11/25/6_ANR_Application_does_not_have_a_focused_window/" title="ANR-Have no focused Window">
+                        <span class="hidden-mobile">ANR-Have no focused Window</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
